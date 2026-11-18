@@ -41,6 +41,7 @@ input.c{text-align:center;font-family:inherit}
 #check{cursor:pointer}
 #check .x{color:var(--dim);font-size:13px;text-align:center;margin-top:6px}
 #lay{display:none}
+#clk,#dte{display:none;font-size:15px;font-weight:700;line-height:34px;color:var(--dim);font-variant-numeric:tabular-nums;pointer-events:none;white-space:nowrap}
 #toast{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:20px;padding:8px 16px;font-size:16px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s;z-index:30;max-width:90vw;text-align:center}
 #toast.on{opacity:1}
 #mic.on{background:var(--mark);color:var(--markink);border-color:var(--mark)}
@@ -57,6 +58,9 @@ body.hb{grid-template-columns:0 1fr;column-gap:0}
 body.hb .bar{position:fixed;left:0;top:4px;transform:translateX(-120%);pointer-events:none}
 body.hb #grip{display:block}
 body{padding:4px max(8px,env(safe-area-inset-right)) 4px max(8px,env(safe-area-inset-left))}
+#clk,#dte{display:block;grid-column:2;grid-row:2;align-self:center}
+#clk{justify-self:start}
+#dte{justify-self:end}
 h1,.hint{display:none}
 body{display:grid;grid-template-columns:max-content 1fr;grid-template-rows:auto auto auto 1fr;column-gap:6px;align-items:start}
 .bar{grid-column:1;grid-row:1/-1;flex-direction:column;flex-wrap:nowrap;margin:0;gap:5px;height:calc(100vh - 8px);height:calc(100dvh - 8px);overflow-y:auto}
@@ -96,6 +100,7 @@ body.l32 .c{height:calc((100vh - 141px)/6);height:calc((100dvh - 141px)/6);font-
 <div id="plates"></div>
 <button id="grip" aria-label="Vis knapper">›</button>
 <div id="toast"></div>
+<div id="clk"></div><div id="dte"></div>
 <script>
 var KEY="banko-v3";
 function blank(){return{cells:Array(27).fill(""),marks:Array(27).fill(false)}}
@@ -216,6 +221,9 @@ function startListen(){if(!SR){toast('Din browser kan ikke lytte efter tale');re
  LS=true;setM();try{rec.start();wake(true);toast('🎤 Lytter – råb numrene op')}catch(x){stopListen('Kunne ikke starte mikrofonen')}}
 mb.onclick=function(){if(LS)stopListen('Lytning slukket');else startListen()};
 setM();
+var ce=document.getElementById('clk'),de=document.getElementById('dte');
+function tick(){var n=new Date();function z(x){return x<10?'0'+x:''+x}ce.textContent=z(n.getHours())+':'+z(n.getMinutes())+':'+z(n.getSeconds());de.textContent=n.toLocaleDateString('da-DK',{weekday:'short',day:'numeric',month:'short',year:'numeric'})}
+tick();setInterval(tick,1000);
 var fsb=document.getElementById('fs');
 var FSOFF=false;
 function reqFs(){try{var p=document.documentElement.requestFullscreen();if(p&&p.catch)p.catch(function(){})}catch(e){}}
