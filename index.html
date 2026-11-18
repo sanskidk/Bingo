@@ -216,12 +216,10 @@ function stopListen(m){LS=false;try{if(rec)rec.stop()}catch(e){}wake(false);setM
 function startListen(){if(!SR){toast('Din browser kan ikke lytte efter tale');return}
  rec=new SR();rec.lang='da-DK';rec.continuous=true;rec.interimResults=true;rec.maxAlternatives=3;
  rec.onresult=function(e){rdelay=300;for(var i=e.resultIndex;i<e.results.length;i++){var r=e.results[i];if(r.isFinal){clearTimeout(it);pend='';var ns=[];for(var a=0;a<r.length&&!ns.length;a++)ns=strictNums(r[a].transcript);applyNums(ns,true)}else{var txt=r[0].transcript;pend=txt;clearTimeout(it);(function(t){it=setTimeout(function(){var ns=strictNums(t);if(ns.length&&pend===t)applyNums(ns,false)},450)})(txt)}}};
- rec.onerror=function(e){if(e.error==='not-allowed'||e.error==='service-not-allowed')stopListen('Mikrofon er blokeret – åbn siden direkte i Chrome og tillad mikrofon');else if(e.error==='network'){rdelay=3000;toast('Mistet forbindelse – prøver igen …')}else if(e.error!=='no-speech'&&e.error!=='aborted')toast('Fejl: '+e.error)};
- rec.onend=function(){if(pend){var p=pend;pend='';applyNums(strictNums(p),true)}if(LS)setTimeout(function(){if(LS){if(navigator.onLine===false){waitNet=true;toast('Ingen internet – venter på forbindelse');return}try{rec.start()}catch(x){}}},rdelay)};
+ rec.onerror=function(e){if(e.error==='not-allowed'||e.error==='service-not-allowed')stopListen('Mikrofon er blokeret – åbn siden direkte i Chrome og tillad mikrofon');else if(e.error==='network'){rdelay=Math.min(Math.max(rdelay*2,1500),6000);toast('Talegenkendelsen mistede forbindelsen (network) – prøver igen')}else if(e.error!=='no-speech'&&e.error!=='aborted')toast('Fejl: '+e.error)};
+ rec.onend=function(){if(pend){var p=pend;pend='';applyNums(strictNums(p),true)}if(LS)setTimeout(function(){if(LS){try{rec.start()}catch(x){}}},rdelay)};
  LS=true;setM();try{rec.start();wake(true);toast('🎤 Lytter – råb numrene op')}catch(x){stopListen('Kunne ikke starte mikrofonen')}}
 mb.onclick=function(){if(LS)stopListen('Lytning slukket');else startListen()};
-window.addEventListener('online',function(){if(LS&&waitNet){waitNet=false;rdelay=300;toast('Forbindelse tilbage – lytter igen');try{rec.start()}catch(x){}}});
-window.addEventListener('offline',function(){if(LS)toast('Ingen internet – lytning venter')});
 setM();
 var ce=document.getElementById('clk'),de=document.getElementById('dte');
 function tick(){var n=new Date();function z(x){return x<10?'0'+x:''+x}ce.textContent=z(n.getHours())+':'+z(n.getMinutes())+':'+z(n.getSeconds());de.textContent=n.toLocaleDateString('da-DK',{weekday:'short',day:'numeric',month:'short',year:'numeric'})}
