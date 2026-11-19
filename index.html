@@ -90,6 +90,7 @@ body.l32 .c{height:calc((100vh - 141px)/6);height:calc((100dvh - 141px)/6);font-
   <button class="t" id="lay"></button>
   <button class="t" id="thm"></button>
   <button class="t" id="vib"></button>
+  <button class="t" id="lang"></button>
   <button class="t" id="mic"></button>
   <button class="t" id="fs" style="display:none">⛶</button>
   <button class="t" id="reset">Ryd markeringer</button>
@@ -192,16 +193,43 @@ document.addEventListener('touchmove',function(e){if(tx!==null&&e.touches[0].cli
 sched();
 var SR=window.SpeechRecognition||window.webkitSpeechRecognition,LS=false,rec=null,wl=null,mb=document.getElementById('mic'),tt,tel=document.getElementById('toast');
 function toast(t){tel.textContent=t;tel.className='on';clearTimeout(tt);tt=setTimeout(function(){tel.className=''},2800)}
-var NU={en:1,et:1,to:2,tre:3,fire:4,fem:5,seks:6,syv:7,otte:8,ni:9},NT={tyve:20,tredive:30,fyrre:40,halvtreds:50,treds:60,tres:60,halvfjerds:70,firs:80,halvfems:90},NX={ti:10,elleve:11,tolv:12,tretten:13,fjorten:14,femten:15,seksten:16,sytten:17,atten:18,nitten:19};
-function tens(w){return NT[(w||'').replace(/indstyve$/,'')]||0}
-function w2n(w){w=w.replace(/indstyve$/,'');if(/^\d+$/.test(w))return parseInt(w,10);if(NU[w])return NU[w];if(NX[w])return NX[w];if(NT[w])return NT[w];var m=w.match(/^(en|et|to|tre|fire|fem|seks|syv|otte|ni)og(.+)$/);if(m&&tens(m[2]))return NU[m[1]]+tens(m[2]);return 0}
-function parseNums(t){var tk=t.toLowerCase().replace(/[^a-z0-9æøå]+/g,' ').trim().split(' '),out=[],i=0;
- while(i<tk.length){var w=tk[i];if(!w){i++;continue}
-  if(tk[i+1]==='og'&&NU[w]&&tens(tk[i+2])){out.push([NU[w]+tens(tk[i+2]),0]);i+=3;continue}
-  var n=w2n(w);if(n)out.push([n,n<10?1:0]);i++}
- var res=[];for(var j=0;j<out.length;j++){var a=out[j];if(a[1]&&out[j+1]&&out[j+1][1]){var c=a[0]*10+out[j+1][0];if(c>=10&&c<=90){res.push(c);j++;continue}}res.push(a[0])}
+var LANGS=[
+{c:'da-DK',n:'Dansk',ig:['og','nummer'],cu:'og',sfx:'indstyve',U:['en et','to','tre','fire','fem','seks','syv','otte','ni'],X:['ti','elleve','tolv','tretten','fjorten','femten','seksten','sytten','atten','nitten'],T:['tyve','tredive','fyrre','halvtreds','treds tres','halvfjerds','firs','halvfems']},
+{c:'nb-NO',n:'Norsk',ig:['og','nummer'],ct:1,U:['en ett','to','tre','fire','fem','seks','sju syv','åtte','ni'],X:['ti','elleve','tolv','tretten','fjorten','femten','seksten','sytten','atten','nitten'],T:['tjue tyve','tretti','førti','femti','seksti','sytti','åtti','nitti']},
+{c:'sv-SE',n:'Svenska',ig:['och','nummer'],ct:1,U:['en ett','två','tre','fyra','fem','sex','sju','åtta','nio'],X:['tio','elva','tolv','tretton','fjorton','femton','sexton','sjutton','arton','nitton'],T:['tjugo','trettio','fyrtio','femtio','sextio','sjuttio','åttio','nittio']},
+{c:'fi-FI',n:'Suomi',ig:['ja','numero'],ct:1,U:['yksi','kaksi','kolme','neljä','viisi','kuusi','seitsemän','kahdeksan','yhdeksän'],X:['kymmenen','yksitoista','kaksitoista','kolmetoista','neljätoista','viisitoista','kuusitoista','seitsemäntoista','kahdeksantoista','yhdeksäntoista'],T:['kaksikymmentä','kolmekymmentä','neljäkymmentä','viisikymmentä','kuusikymmentä','seitsemänkymmentä','kahdeksankymmentä','yhdeksänkymmentä']},
+{c:'de-DE',n:'Deutsch',ig:['und','nummer'],cu:'und',U:['eins ein eine','zwei zwo','drei','vier','fünf','sechs','sieben','acht','neun'],X:['zehn','elf','zwölf','dreizehn','vierzehn','fünfzehn','sechzehn','siebzehn','achtzehn','neunzehn'],T:['zwanzig','dreißig dreissig','vierzig','fünfzig','sechzig','siebzig','achtzig','neunzig']},
+{c:'en-GB',n:'English',ig:['and','number'],U:['one','two','three','four','five','six','seven','eight','nine'],X:['ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen'],T:['twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety']},
+{c:'bs-BA',n:'Bosanski',ig:['i','broj'],U:['jedan jedna jedno','dva dvije','tri','četiri cetiri','pet','šest sest','sedam','osam','devet'],X:['deset','jedanaest','dvanaest','trinaest','četrnaest cetrnaest','petnaest','šesnaest sesnaest','sedamnaest','osamnaest','devetnaest'],T:['dvadeset','trideset','četrdeset cetrdeset','pedeset','šezdeset sezdeset','sedamdeset','osamdeset','devedeset']},
+{c:'ru-RU',n:'Русский',ig:['и','номер'],U:['один одна одно','два две','три','четыре','пять','шесть','семь','восемь','девять'],X:['десять','одиннадцать','двенадцать','тринадцать','четырнадцать','пятнадцать','шестнадцать','семнадцать','восемнадцать','девятнадцать'],T:['двадцать','тридцать','сорок','пятьдесят','шестьдесят','семьдесят','восемьдесят','девяносто']}
+];
+function build(L){L.m={};
+ L.U.forEach(function(s,i){s.split(' ').forEach(function(w){L.m[w]=[i+1,'u']})});
+ L.X.forEach(function(s,i){s.split(' ').forEach(function(w){L.m[w]=[i+10,'x']})});
+ L.T.forEach(function(s,i){s.split(' ').forEach(function(w){L.m[w]=[i*10+20,'t']})});
+ function keys(k){return Object.keys(L.m).filter(function(w){return L.m[w][1]===k}).sort(function(x,y){return y.length-x.length})}
+ var ul=keys('u').join('|'),tl=keys('t').join('|');
+ if(L.cu)L.rcu=new RegExp('^('+ul+')'+L.cu+'('+tl+')$');
+ if(L.ct)L.rct=new RegExp('^('+tl+')('+ul+')$');
+ if(L.sfx)L.rsfx=new RegExp(L.sfx+'$')}
+LANGS.forEach(build);
+function items(t,L){var tk=t.toLowerCase().replace(/[^\p{L}\p{N}]+/gu,' ').trim().split(' '),out=[];if(!tk[0])return out;
+ for(var i=0;i<tk.length;i++){var w=tk[i];if(L.rsfx)w=w.replace(L.rsfx,'');
+  if(L.ig.indexOf(w)>-1)continue;
+  if(/^\d+$/.test(w)){var v=parseInt(w,10);if(v<1||v>90)return [];out.push({v:v,k:v<10?'u':(v>=20&&v%10===0?'t':'x')});continue}
+  var m=L.m[w];if(m){out.push({v:m[0],k:m[1]});continue}
+  var r=L.rcu&&w.match(L.rcu);if(r){out.push({v:L.m[r[1]][0]+L.m[r[2]][0],k:'x'});continue}
+  r=L.rct&&w.match(L.rct);if(r){out.push({v:L.m[r[1]][0]+L.m[r[2]][0],k:'x'});continue}
+  return []}
+ return out}
+function merge(it){var res=[];for(var i=0;i<it.length;i++){var a=it[i],b=it[i+1];
+ if(b&&((a.k==='u'&&b.k==='t')||(a.k==='t'&&b.k==='u'))){res.push(a.v+b.v);i++}
+ else if(b&&a.k==='u'&&b.k==='u'&&a.v*10+b.v<=90){res.push(a.v*10+b.v);i++}
+ else res.push(a.v)}
  return res.filter(function(n){return n>=1&&n<=90})}
-function strictNums(t){var tk=t.toLowerCase().replace(/[^a-z0-9æøå]+/g,' ').trim().split(' ');if(!tk[0])return [];for(var i=0;i<tk.length;i++){var w=tk[i];if(w==='og'||w==='nummer')continue;if(!w2n(w))return []}return parseNums(t)}
+var LI=0;
+function parseNums(t){return merge(items(t,LANGS[LI]))}
+function strictNums(t){return parseNums(t)}
 var made=[];
 function markNum(n,rec){var hits=[];S.plates.forEach(function(pl,pi){var idx=pl.cells.indexOf(String(n));if(idx>-1){hits.push(pi+1);if(!pl.marks[idx]){pl.marks[idx]=true;buzz(pl,idx);if(rec)made.push({pl:pl,idx:idx,n:n})}}});return hits}
 function applyNums(ns,fin){if(S.edit||!ns.length)return;
@@ -214,12 +242,17 @@ function wake(on){try{if(on&&navigator.wakeLock){navigator.wakeLock.request('scr
 function setM(){mb.textContent=LS?'🎤 Lyt: til':'🎤 Lyt: fra';mb.classList.toggle('on',LS)}
 function stopListen(m){LS=false;try{if(rec)rec.stop()}catch(e){}wake(false);setM();if(m)toast(m)}
 function startListen(){if(!SR){toast('Din browser kan ikke lytte efter tale');return}
- rec=new SR();rec.lang='da-DK';rec.continuous=true;rec.interimResults=true;rec.maxAlternatives=3;
+ rec=new SR();rec.lang=LANGS[LI].c;rec.continuous=true;rec.interimResults=true;rec.maxAlternatives=3;
  rec.onresult=function(e){rdelay=300;for(var i=e.resultIndex;i<e.results.length;i++){var r=e.results[i];if(r.isFinal){clearTimeout(it);pend='';var ns=[];for(var a=0;a<r.length&&!ns.length;a++)ns=strictNums(r[a].transcript);applyNums(ns,true)}else{var txt=r[0].transcript;pend=txt;clearTimeout(it);(function(t){it=setTimeout(function(){var ns=strictNums(t);if(ns.length&&pend===t)applyNums(ns,false)},450)})(txt)}}};
  rec.onerror=function(e){if(e.error==='not-allowed'||e.error==='service-not-allowed')stopListen('Mikrofon er blokeret – åbn siden direkte i Chrome og tillad mikrofon');else if(e.error==='network'){rdelay=Math.min(Math.max(rdelay*2,1500),6000);toast('Talegenkendelsen mistede forbindelsen (network) – prøver igen')}else if(e.error!=='no-speech'&&e.error!=='aborted')toast('Fejl: '+e.error)};
  rec.onend=function(){if(pend){var p=pend;pend='';applyNums(strictNums(p),true)}if(LS)setTimeout(function(){if(LS){try{rec.start()}catch(x){}}},rdelay)};
  LS=true;setM();try{rec.start();wake(true);toast('🎤 Lytter – råb numrene op')}catch(x){stopListen('Kunne ikke starte mikrofonen')}}
 mb.onclick=function(){if(LS)stopListen('Lytning slukket');else startListen()};
+var gb=document.getElementById('lang');
+try{var sl=localStorage.getItem('banko-lang');if(sl!==null&&LANGS[+sl])LI=+sl}catch(e){}
+function setG(){gb.textContent='🌐 '+LANGS[LI].n}
+gb.onclick=function(){LI=(LI+1)%LANGS.length;try{localStorage.setItem('banko-lang',LI)}catch(e){}setG();toast('🌐 '+LANGS[LI].n);if(rec){rec.lang=LANGS[LI].c;if(LS){try{rec.abort()}catch(e){}}}};
+setG();
 setM();
 var ce=document.getElementById('clk'),de=document.getElementById('dte');
 function tick(){var n=new Date();function z(x){return x<10?'0'+x:''+x}ce.textContent=z(n.getHours())+':'+z(n.getMinutes())+':'+z(n.getSeconds());de.textContent=n.toLocaleDateString('da-DK',{weekday:'short',day:'numeric',month:'short',year:'numeric'})}
