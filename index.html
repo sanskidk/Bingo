@@ -114,7 +114,7 @@ function render(){
   document.getElementById("edit").textContent=S.edit?"✓ Færdig med at taste":"Rediger tal";
   document.getElementById("edit").className="t"+(S.edit?" on":"");
   document.getElementById("hint").textContent=S.edit?"Tast tallene fra din plade ind. Lad felterne være tomme, hvor der ikke står noget.":"Tryk på et tal for at markere det. Tryk igen for at fjerne.";
-  var box=document.getElementById("plates");box.innerHTML="";
+  var box=document.getElementById("plates");box.innerHTML="";box.style.gridTemplateRows=S.plates.length>6?'repeat('+Math.ceil(S.plates.length/2)+',auto)':'';
   S.plates.forEach(function(pl,pi){
     var d=document.createElement("div");d.className="plate";
     var h=document.createElement("div");h.className="ph";
@@ -154,13 +154,14 @@ function check(){
      var ec=n<10?0:Math.min(8,Math.floor(n/10));
      if(ec!==c)iss.push('Plade '+(pi+1)+', række '+(r+1)+': '+n+' står i kolonne '+(c+1)+' (hører normalt i kolonne '+(ec+1)+')')}}
    if(rc!==5)iss.push('Plade '+(pi+1)+', række '+(r+1)+': '+rc+' tal (skal være 5)')}});
- var miss=[],tot=0;
- for(var k=1;k<=90;k++){if(!locs[k])miss.push(k);else{tot++;if(locs[k].length>1)iss.unshift('Dobbelt: '+k+' står på plade '+locs[k].join(' og '))}}
+ var miss=[],tot=0,full=S.plates.length===6,np=S.plates.length;
+ for(var k=1;k<=90;k++){if(!locs[k])miss.push(k);else{tot++;if(full){if(locs[k].length>1)iss.unshift('Dobbelt: '+k+' står på plade '+locs[k].join(' og '))}else{var cnt={};locs[k].forEach(function(p){cnt[p]=(cnt[p]||0)+1;if(cnt[p]===2)iss.unshift('Dobbelt på plade '+p+': '+k)})}}}
+ var okAll=full?(!iss.length&&!miss.length):!iss.length;
  var el=document.getElementById('check');el.innerHTML='';el.className='on';
  function line(t,cl){var p=document.createElement('p');p.textContent=t;if(cl)p.className=cl;el.appendChild(p)}
- if(!iss.length&&!miss.length)line('✓ Alle 90 tal er indtastet præcis én gang, og hver række har 5.','ok');
- else{line('Fundet '+tot+' af 90 forskellige tal.');iss.forEach(function(t){line('• '+t)});if(miss.length)line('Mangler: '+miss.join(', '))}
- line('✕ Tryk her for at lukke','x');el.onclick=function(){el.className='';clearTimeout(ct)};clearTimeout(ct);if(!iss.length&&!miss.length)ct=setTimeout(function(){el.className=''},5000);
+ if(okAll)line(full?'✓ Alle 90 tal er indtastet præcis én gang, og hver række har 5.':'✓ '+np+' plader: hver række har 5 tal, og der er ingen fejl. Samme tal på flere plader er normalt, når du ikke har 6 plader.','ok');
+ else{if(full)line('Fundet '+tot+' af 90 forskellige tal.');iss.forEach(function(t){line('• '+t)});if(full&&miss.length)line('Mangler: '+miss.join(', '))}
+ line('✕ Tryk her for at lukke','x');el.onclick=function(){el.className='';clearTimeout(ct)};clearTimeout(ct);if(okAll)ct=setTimeout(function(){el.className=''},5000);
 }
 var ct;document.getElementById('chk').onclick=check;
 var lb=document.getElementById('lay'),L=false;
