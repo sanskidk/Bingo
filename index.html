@@ -318,39 +318,6 @@ if(document.fullscreenEnabled){fsb.style.display='';
  fsb.onclick=function(){if(document.fullscreenElement){try{document.exitFullscreen()}catch(e){}}else{FSOFF=false;reqFs()}};
  document.addEventListener('fullscreenchange',function(){var b=document.body.classList;if(!document.fullscreenElement){FSOFF=true;b.remove('hp')}else if(!isLand()&&!S.edit){b.add('hp')}});
  document.addEventListener('click',function(){if(!FSOFF&&!document.fullscreenElement)reqFs()},true)}
-// --- NY MIKROFON OG TAL-GENKENDELSE MED 1-SEKUNDS TIMEOUT ---
-var micBtn=document.getElementById('mic'),micOn=false,rec=null,lastNum="",numTimeout=null;
-function initSpeech(){
-  var Speech=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!Speech){toast('Mikrofon understøttes ikke');return}
-  rec=new Speech();rec.lang='da-DK';rec.continuous=true;rec.interimResults=true;
-  rec.onresult=function(e){
-    var tr="";for(var i=e.resultIndex;i<e.results.length;i++){tr+=e.results[i].transcript}
-    tr=tr.toLowerCase().replace(/at den/g,"18").replace(/atten/g,"18").replace(/aften/g,"18");
-    var matches=tr.match(/\d+/g);if(!matches)return;
-    var currentNum=matches[matches.length-1];var n=parseInt(currentNum,10);
-    if(n>=1&&n<=90&&currentNum!==lastNum){
-      clearTimeout(numTimeout);
-      numTimeout=setTimeout(function(){
-        lastNum=currentNum;
-        S.plates.forEach(function(pl){
-          pl.cells.forEach(function(cv,ci){
-            if(cv===currentNum){pl.marks[ci]=true}
-          });
-        });
-        save();toast('Hørt: '+currentNum);vibe(100);render();
-      },1000);
-    }
-  };
-  rec.onend=function(){if(micOn)rec.start()};
-}
-function setM(){if(micBtn){micBtn.textContent=micOn?'🎙️ Mikrofon til':'🎙️ Mikrofon fra';micBtn.classList.toggle('on',micOn)}}
-if(micBtn){
-  micBtn.onclick=function(){
-    if(!rec)initSpeech();if(!rec)return;micOn=!micOn;setM();
-    if(micOn){try{rec.start();toast('Lytter efter tal...')}catch(e){}}else{try{rec.stop()}catch(e){}}
-  };
-}
 render();
 if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})}
 </script>
