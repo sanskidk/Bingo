@@ -8,10 +8,11 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
 <link rel="apple-touch-icon" href="icon-192.png">
+<meta name="color-scheme" content="light dark">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Banko</title>
 <style>
-:root{--bg:#faf6ee;--card:#fff;--ink:#222;--dim:#8a8578;--line:#d9d2c0;--mark:#d6336c;--markink:#fff;--empty:#efe9d8;--ok:#2b8a3e;
+:root{color-scheme:light dark;--bg:#faf6ee;--card:#fff;--ink:#222;--dim:#8a8578;--line:#d9d2c0;--mark:#d6336c;--markink:#fff;--empty:#efe9d8;--ok:#2b8a3e;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#17181c;--card:#23252b;--ink:#f1f1f1;--dim:#9a9aa3;--line:#3a3d46;--mark:#f06595;--markink:#1a1a1a;--empty:#1d1f24;--ok:#69db7c}}
 :root[data-theme="dark"]{--bg:#17181c;--card:#23252b;--ink:#f1f1f1;--dim:#9a9aa3;--line:#3a3d46;--mark:#f06595;--markink:#1a1a1a;--empty:#1d1f24;--ok:#69db7c}
@@ -20,6 +21,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple
 h1{font-size:20px;margin:4px 0 10px}
 .bar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
 button.t{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:15px}
+button.t:disabled{opacity:.4}
 button.t.on{background:var(--mark);color:var(--markink);border-color:var(--mark)}
 #plates{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(var(--r,3),auto);grid-auto-flow:column;gap:8px}
 .plate{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:4px;min-width:0}
@@ -128,12 +130,13 @@ var D=['8 - 21 - - 55 61 75 - | 9 - - 35 43 56 - - 86 | - 17 23 - 46 - 64 - 89',
 function mk(s){var t=s.replace(/\|/g,' ').split(/\s+/).filter(Boolean).map(function(x){return x==='-'?'':x});return{cells:t,marks:Array(27).fill(false)}}
 var S={plates:D.map(mk),edit:false};
 try{var r=localStorage.getItem(KEY);if(r){var p=JSON.parse(r);if(p&&p.plates&&p.plates.length)S=p}}catch(e){}
+if(S.plates.length>12)S.plates.length=12;
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 function render(){
   document.getElementById("edit").textContent=S.edit?"✓ Færdig med at taste":"Rediger tal";
   document.getElementById("edit").className="t"+(S.edit?" on":"");
   document.getElementById("hint").textContent=S.edit?"Tast tallene fra din plade ind. Lad felterne være tomme, hvor der ikke står noget.":"Tryk på et tal for at markere det. Tryk igen for at fjerne.";
-  var box=document.getElementById("plates");box.innerHTML="";box.style.setProperty('--r',Math.max(3,Math.ceil(S.plates.length/2)));box.style.setProperty('--r3',Math.max(2,Math.ceil(S.plates.length/3)));
+  var box=document.getElementById("plates");box.innerHTML="";document.getElementById('add').disabled=S.plates.length>=12;box.style.setProperty('--r',Math.max(3,Math.ceil(S.plates.length/2)));box.style.setProperty('--r3',Math.max(2,Math.ceil(S.plates.length/3)));
   S.plates.forEach(function(pl,pi){
     var d=document.createElement("div");d.className="plate";
     var h=document.createElement("div");h.className="ph";
@@ -158,7 +161,7 @@ function render(){
     box.appendChild(d)});
 }
 document.getElementById("edit").onclick=function(){S.edit=!S.edit;save();render()};
-document.getElementById("add").onclick=function(){S.plates.push(blank());S.edit=true;save();render()};
+document.getElementById("add").onclick=function(){if(S.plates.length>=12){toast('Maks. 12 plader');return}S.plates.push(blank());S.edit=true;save();render()};
 var rb=document.getElementById("reset"),rt;
 function rbOff(){rb.dataset.s="";rb.textContent="Ryd markeringer";rb.classList.remove("on")}
 rb.onclick=function(){if(rb.dataset.s){clearTimeout(rt);rbOff();S.plates.forEach(function(p){p.marks=p.marks.map(function(){return false})});save();render()}else{rb.dataset.s="1";rb.textContent="Tryk igen for at rydde";rb.classList.add("on");rt=setTimeout(rbOff,3000)}};
@@ -265,9 +268,10 @@ var pend='',it,rdelay=300,waitNet=false;
 function wake(on){try{if(on&&navigator.wakeLock){navigator.wakeLock.request('screen').then(function(l){wl=l}).catch(function(){})}else if(!on&&wl){wl.release();wl=null}}catch(e){}}
 function setM(){mb.textContent=LS?'🎤 Lyt: til':'🎤 Lyt: fra';mb.classList.toggle('on',LS)}
 function stopListen(m){LS=false;try{if(rec)rec.stop()}catch(e){}wake(false);setM();if(m)toast(m)}
+function setPhrases(){try{if(typeof SpeechRecognitionPhrase!=='undefined'&&rec&&('phrases' in rec)){var ph=[];Object.keys(LANGS[LI].m).forEach(function(w){ph.push(new SpeechRecognitionPhrase(w,4.0))});rec.phrases=ph}}catch(e){}}
 function startListen(){if(!SR){toast('Din browser kan ikke lytte efter tale');return}
- rec=new SR();rec.lang=LANGS[LI].c;rec.continuous=true;rec.interimResults=true;rec.maxAlternatives=5;
- rec.onresult=function(e){rdelay=300;for(var i=e.resultIndex;i<e.results.length;i++){var r=e.results[i];if(r.isFinal){clearTimeout(it);pend='';var ns=[];for(var a=0;a<r.length&&!ns.length;a++)ns=strictNums(r[a].transcript);applyNums(ns,true);if(!ns.length){var tx=r[0].transcript.trim();if(tx&&tx.split(/\s+/).length<=3)toast('🎤 Hørte "'+tx+'" – ikke et tal')}}else{var txt=r[0].transcript;pend=txt;clearTimeout(it);(function(t){it=setTimeout(function(){var ns=strictNums(t);if(ns.length&&pend===t)applyNums(ns,false)},450)})(txt)}}};
+ rec=new SR();rec.lang=LANGS[LI].c;setPhrases();rec.continuous=true;rec.interimResults=true;rec.maxAlternatives=5;
+ rec.onresult=function(e){rdelay=300;for(var i=e.resultIndex;i<e.results.length;i++){var r=e.results[i];if(r.isFinal){clearTimeout(it);pend='';var ns=[];for(var a=0;a<r.length&&!ns.length;a++)ns=strictNums(r[a].transcript);applyNums(ns,true);if(!ns.length){var tx=r[0].transcript.trim();if(!tx)toast('🎤 Hørte lyd, men ingen ord');else if(tx.split(/\s+/).length<=3)toast('🎤 Hørte "'+tx+'" – ikke et tal')}}else{var txt=r[0].transcript;pend=txt;clearTimeout(it);(function(t){it=setTimeout(function(){var ns=strictNums(t);if(ns.length&&pend===t)applyNums(ns,false)},450)})(txt)}}};
  rec.onerror=function(e){if(e.error==='not-allowed'||e.error==='service-not-allowed')stopListen('Mikrofon er blokeret – åbn siden direkte i Chrome og tillad mikrofon');else if(e.error==='network'){rdelay=Math.min(Math.max(rdelay*2,1500),6000);toast('Talegenkendelsen mistede forbindelsen (network) – prøver igen')}else if(e.error!=='no-speech'&&e.error!=='aborted')toast('Fejl: '+e.error)};
  rec.onend=function(){if(pend){var p=pend;pend='';applyNums(strictNums(p),true)}if(LS)setTimeout(function(){if(LS){try{rec.start()}catch(x){}}},rdelay)};
  LS=true;setM();try{rec.start();wake(true);toast('🎤 Lytter – råb numrene op')}catch(x){stopListen('Kunne ikke starte mikrofonen')}}
@@ -275,7 +279,7 @@ mb.onclick=function(){if(LS)stopListen('Lytning slukket');else startListen()};
 var gb=document.getElementById('lang');
 try{var sl=localStorage.getItem('banko-lang');if(sl!==null&&LANGS[+sl])LI=+sl}catch(e){}
 function setG(){gb.textContent='🌐 '+LANGS[LI].n}
-gb.onclick=function(){LI=(LI+1)%LANGS.length;try{localStorage.setItem('banko-lang',LI)}catch(e){}setG();toast('🌐 '+LANGS[LI].n);if(rec){rec.lang=LANGS[LI].c;if(LS){try{rec.abort()}catch(e){}}}};
+gb.onclick=function(){LI=(LI+1)%LANGS.length;try{localStorage.setItem('banko-lang',LI)}catch(e){}setG();toast('🌐 '+LANGS[LI].n);if(rec){rec.lang=LANGS[LI].c;setPhrases();if(LS){try{rec.abort()}catch(e){}}}};
 setG();
 setM();
 var ce=document.getElementById('clk'),de=document.getElementById('dte');
