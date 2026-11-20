@@ -50,6 +50,7 @@ input.c{text-align:center;font-family:inherit}
 #toast{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:20px;padding:8px 16px;font-size:16px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s;z-index:30;max-width:90vw;text-align:center}
 #toast.on{opacity:1}
 #mic.on{background:var(--mark);color:var(--markink);border-color:var(--mark)}
+#cnt{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:28px;padding:0 6px;margin-right:8px;border-radius:6px;background:var(--mark);color:var(--markink);font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1;vertical-align:middle}
 #ptab{display:none;position:fixed;top:env(safe-area-inset-top,0px);left:50%;transform:translateX(-50%);width:90px;height:26px;border:none;border-radius:0 0 14px 14px;background:var(--mark);color:var(--markink);opacity:.45;font-size:16px;padding:0;z-index:20}
 @media (orientation:portrait){body.hp h1,body.hp .hint,body.hp .bar{display:none}body.hp #ptab{display:block}body.hp .c{font-size:clamp(10px,3.6vw,18px)}
 body{min-height:100vh;min-height:100dvh;box-sizing:border-box;display:flex;flex-direction:column}
@@ -59,7 +60,7 @@ body{min-height:100vh;min-height:100dvh;box-sizing:border-box;display:flex;flex-
 .c{aspect-ratio:auto;height:auto;min-height:0;max-height:64px}
 .grid{align-content:start}}
 #grip{display:none;position:fixed;left:0;top:50%;transform:translateY(-50%);width:26px;height:90px;border:none;border-radius:0 12px 12px 0;background:var(--mark);color:var(--markink);opacity:.45;font-size:20px;padding:0;z-index:20}
-#brand{font-weight:700;letter-spacing:.3px;margin:0 2px 8px;font-size:22px;text-align:center;grid-column:1/-1;grid-row:2}
+#brand{font-weight:700;letter-spacing:.3px;margin:0 2px 8px;font-size:22px;text-align:center;grid-column:1/-1;grid-row:2;display:flex;align-items:center;justify-content:center;gap:0}
 #brand sup{font-size:.6em;line-height:0;vertical-align:super}
 #reset{flex-basis:100%;padding:18px 12px;font-size:17px;font-weight:600}
 :root[data-theme="blue"]{--bg:#0b1626;--card:#14253d;--ink:#eaf2ff;--dim:#8fa3bf;--line:#2b4468;--mark:#4dabf7;--markink:#08233f;--empty:#0f1d31;--ok:#69db7c}
@@ -81,7 +82,8 @@ body{display:grid;grid-template-columns:max-content 1fr;grid-template-rows:auto 
 #check{grid-column:2;grid-row:1}
 #plates{grid-column:2;grid-row:3}
 #topline{grid-column:2;grid-row:2;grid-template-columns:1fr auto 1fr;align-items:center;margin-bottom:3px}
-#brand{grid-column:2;grid-row:1;margin:0;font-size:20px;line-height:34px;height:34px;white-space:nowrap}
+#brand{grid-column:2;grid-row:1;margin:0;font-size:20px;line-height:34px;height:34px;white-space:nowrap;display:flex;align-items:center;justify-content:center}
+#brand #cnt{height:24px;min-width:24px;font-size:13px;margin-right:6px}
 button.t{padding:6px 10px;font-size:13px;white-space:nowrap}
 #plates{gap:6px}
 body.l32 #plates{grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,auto);grid-auto-flow:row}
@@ -118,7 +120,7 @@ body.hb #grip{width:18px;height:70px;font-size:14px}
 </div>
 <p class="hint" id="hint"></p>
 <div id="check"></div>
-<div id="topline"><div id="clk"></div><div id="dte"></div><div id="brand">Club 90’ by ErKaTek<sup>®</sup></div></div>
+<div id="topline"><div id="clk"></div><div id="dte"></div><div id="brand"><span id="cnt">0</span>Club 90’ by ErKaTek<sup>®</sup></div></div>
 <div id="plates"></div>
 <button id="grip" aria-label="Vis knapper">›</button>
 <button id="ptab" aria-label="Vis knapper">▾</button>
@@ -136,6 +138,11 @@ function render(){
   document.getElementById("edit").textContent=S.edit?"✓ Færdig med at taste":"Rediger tal";
   document.getElementById("edit").className="t"+(S.edit?" on":"");
   document.getElementById("hint").textContent=S.edit?"Tast tallene fra din plade ind. Lad felterne være tomme, hvor der ikke står noget.":"Tryk på et tal for at markere det. Tryk igen for at fjerne.";
+  // Antal forskellige numre der er markeret (råbt op)
+  var marked={};
+  S.plates.forEach(function(pl){pl.cells.forEach(function(v,i){if(v!==""&&pl.marks[i])marked[v]=1})});
+  var cntEl=document.getElementById("cnt");
+  if(cntEl)cntEl.textContent=Object.keys(marked).length;
   var box=document.getElementById("plates");box.innerHTML="";document.getElementById('add').disabled=S.plates.length>=12;box.style.setProperty('--r',Math.max(3,Math.ceil(S.plates.length/2)));box.style.setProperty('--r3',Math.max(2,Math.ceil(S.plates.length/3)));
   S.plates.forEach(function(pl,pi){
     var d=document.createElement("div");d.className="plate";
