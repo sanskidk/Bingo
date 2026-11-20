@@ -261,8 +261,8 @@ function items(t,L){var tl=t.toLowerCase();if(L.c==='da-DK')tl=tl.replace(/halv\
   return []}
  return out}
 function merge(it){var res=[];for(var i=0;i<it.length;i++){var a=it[i],b=it[i+1];
+ // Kun kombiner enere+tiere (fx "to tyve" → 22). To enkeltcifre kombineres IKKE automatisk – det styres af timing i stedet.
  if(b&&((a.k==='u'&&b.k==='t')||(a.k==='t'&&b.k==='u'))){res.push(a.v+b.v);i++}
- else if(b&&a.k==='u'&&b.k==='u'&&a.v*10+b.v<=90){res.push(a.v*10+b.v);i++}
  else res.push(a.v)}
  return res.filter(function(n){return n>=1&&n<=90})}
 var LI=0;
