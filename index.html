@@ -1,17 +1,17 @@
 <!DOCTYPE html>
 <html lang="da">
-<head>
-<meta charset="utf-8">
-<meta name="theme-color" content="#000000">
-<meta name="application-name" content="Banko">
-<meta name="mobile-web-app-capable" content="yes">
-<link rel="manifest" href="manifest.json">
-<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
-<link rel="apple-touch-icon" href="icon-192.png">
-<meta name="color-scheme" content="light dark">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Banko</title>
-<style>
+  <head>
+    <meta charset="utf-8">
+    <meta name="theme-color" content="#000000">
+    <meta name="application-name" content="Banko">
+    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <meta name="color-scheme" content="light dark">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Banko</title>
+    <style>
 :root{color-scheme:light dark;--bg:#faf6ee;--card:#fff;--ink:#222;--dim:#8a8578;--line:#d9d2c0;--mark:#d6336c;--markink:#fff;--empty:#efe9d8;--ok:#2b8a3e;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#17181c;--card:#23252b;--ink:#f1f1f1;--dim:#9a9aa3;--line:#3a3d46;--mark:#f06595;--markink:#1a1a1a;--empty:#1d1f24;--ok:#69db7c}}
@@ -101,29 +101,46 @@ body.hb{padding-left:max(22px,env(safe-area-inset-left))}
 body.hb #grip{width:18px;height:70px;font-size:14px}
 }
 </style>
-</head>
-<body>
-<h1>Min banko-plade</h1>
-<div class="bar">
-  <button class="t" id="edit"></button>
-  <button class="t" id="add">+ Plade</button>
-  <button class="t" id="chk">Tjek tal</button>
-  <button class="t" id="lay"></button>
-  <button class="t" id="thm"></button>
-  <button class="t" id="vib"></button>
-  <button class="t" id="lang"></button>
-  <button class="t" id="mic"></button>
-  <button class="t" id="fs" style="display:none">⛶</button>
-  <button class="t" id="reset">Ryd markeringer</button>
-</div>
-<p class="hint" id="hint"></p>
-<div id="check"></div>
-<div id="topline"><div id="clk"></div><div id="dte"></div><div id="brand">Club 90’ by ErKaTek<sup>®</sup></div></div>
-<div id="plates"></div>
-<button id="grip" aria-label="Vis knapper">›</button>
-<button id="ptab" aria-label="Vis knapper">▾</button>
-<div id="toast"></div>
-<script>
+  </head>
+  <body>
+    <h1>Min banko-plade</h1>
+    <div class="bar">
+      <button class="t" id="edit">
+      </button>
+      <button class="t" id="add">+ Plade</button>
+      <button class="t" id="chk">Tjek tal</button>
+      <button class="t" id="lay">
+      </button>
+      <button class="t" id="thm">
+      </button>
+      <button class="t" id="vib">
+      </button>
+      <button class="t" id="lang">
+      </button>
+      <button class="t" id="mic">
+      </button>
+      <button class="t" id="fs" style="display:none">⛶</button>
+      <button class="t" id="reset">Ryd markeringer</button>
+    </div>
+    <p class="hint" id="hint">
+    </p>
+    <div id="check">
+    </div>
+    <div id="topline">
+      <div id="clk">
+      </div>
+      <div id="dte">
+      </div>
+      <div id="brand">Club 90’ by ErKaTek<sup>®</sup>
+    </div>
+  </div>
+  <div id="plates">
+  </div>
+  <button id="grip" aria-label="Vis knapper">›</button>
+  <button id="ptab" aria-label="Vis knapper">▾</button>
+  <div id="toast">
+  </div>
+  <script>
 var KEY="banko-v3";
 function blank(){return{cells:Array(27).fill(""),marks:Array(27).fill(false)}}
 var D=['8 - 21 - - 55 61 75 - | 9 - - 35 43 56 - - 86 | - 17 23 - 46 - 64 - 89','- 11 - 31 44 50 - 70 - | 2 13 26 - - - 67 78 - | - 18 - 37 - 54 - 79 81','1 - - - 41 59 65 - 88 | 3 - 20 30 45 - - 72 - | - 19 25 33 - - 69 - 90','- - 24 32 40 - - 76 83 | 6 - 28 - 42 52 62 - - | 7 15 - 34 - 57 - - 84','4 12 - - - 53 - 71 80 | - 14 - 38 - - 60 73 82 | - 16 22 - 47 - 68 - 85','- 10 27 - 48 51 63 - - | - - 29 36 49 - 66 74 - | 5 - - 39 - 58 - 77 87'];
@@ -149,7 +166,20 @@ function render(){
       if(S.edit){el=document.createElement("input");el.type="text";el.inputMode="numeric";el.maxLength=2;el.value=v;el.className="c";
         el.oninput=function(){el.value=el.value.replace(/\D/g,"");pl.cells[i]=el.value;save();if(el.value.length===2){var n=el.parentNode.children[i+1];if(n&&n.tagName==="INPUT")n.focus()}}}
       else{el=document.createElement("button");el.className="c"+(v===""?" e":(pl.marks[i]?" m":""));el.textContent=v;
-        if(v!=="")el.onclick=function(){var wasOn=pl.marks[i];pl.marks[i]=!wasOn;save();if(!wasOn)buzz(pl,i);render()};else el.disabled=true}
+        if(v!=="")el.onclick=function(){
+          var wasOn = pl.marks[i];
+          var targetValue = v;
+          S.plates.forEach(function(otherPl){
+            otherPl.cells.forEach(function(otherV, otherI){
+              if(otherV === targetValue){
+                otherPl.marks[otherI] = !wasOn;
+              }
+            });
+          });
+          save();
+          if(!wasOn)buzz(pl,i);
+          render();
+        };else el.disabled=true}
       g.appendChild(el)});
     d.appendChild(g);
     if(!S.edit){var rw=document.createElement("div");rw.className="rows";
@@ -199,7 +229,7 @@ setT();
 var VIB=true,vb=document.getElementById('vib');
 try{VIB=localStorage.getItem('banko-vib')!=='0'}catch(e){}
 function vibe(p){try{if(navigator.vibrate)navigator.vibrate(p)}catch(e){}}
-function buzz(pl,i){if(!VIB)return;var r=Math.floor(i/9),rowDone=true,all=true;for(var k=0;k<27;k++){if(pl.cells[k]!==''&&!pl.marks[k]){all=false;if(Math.floor(k/9)===r)rowDone=false}}if(all)vibe([300,120,300,120,300]);else if(rowDone)vibe(250)}
+function buzz(pl,i){if(!VIB)return;var r=Math.floor(i/9),rowDone=true,all=true;for(var k=0;k<27;k++){if(pl.cells[k]!==''&&!pl.marks[k]){all=false;if(Math.floor(k/9)===r)rowDone=false}}if(all)vibe();else if(rowDone)vibe(250)}
 function setV(){vb.textContent=VIB?'📳 Vibration til':'📳 Vibration fra'}
 vb.onclick=function(){VIB=!VIB;try{localStorage.setItem('banko-vib',VIB?'1':'0')}catch(e){}setV();if(VIB)vibe(60)};
 setV();
@@ -211,89 +241,9 @@ function sched(){clearTimeout(ht);ht=setTimeout(hideBar,3000)}
 gp.onclick=showBar;document.getElementById('ptab').onclick=showBar;
 barEl.addEventListener('pointerdown',sched,true);
 window.addEventListener('resize',function(){var b=document.body.classList;b.remove('hb');if(!(document.fullscreenElement&&!isLand()&&!S.edit))b.remove('hp');sched()});
-document.addEventListener('touchstart',function(e){var t=e.touches[0];tx=t.clientX<70?t.clientX:null},{passive:true});
-document.addEventListener('touchmove',function(e){if(tx!==null&&e.touches[0].clientX-tx>45){tx=null;if(document.body.classList.contains('hb'))showBar()}},{passive:true});
-sched();
-var SR=window.SpeechRecognition||window.webkitSpeechRecognition,LS=false,rec=null,wl=null,mb=document.getElementById('mic'),tt,tel=document.getElementById('toast');
-function toast(t){tel.textContent=t;tel.className='on';clearTimeout(tt);tt=setTimeout(function(){tel.className=''},2800)}
-var LANGS=[
-{c:'da-DK',n:'Dansk',ig:['og','nummer'],cu:'og',sfx:'indstyve',U:['en et','to','tre','fire','fem','seks','syv','otte','ni'],X:['ti','elleve','tolv','tretten','fjorten','femten','seksten','sytten','atten','nitten'],T:['tyve','tredive','fyrre','halvtreds','treds tres','halvfjerds','firs','halvfems']},
-{c:'nb-NO',n:'Norsk',ig:['og','nummer'],ct:1,U:['en ett','to','tre','fire','fem','seks','sju syv','åtte','ni'],X:['ti','elleve','tolv','tretten','fjorten','femten','seksten','sytten','atten','nitten'],T:['tjue tyve','tretti','førti','femti','seksti','sytti','åtti','nitti']},
-{c:'sv-SE',n:'Svenska',ig:['och','nummer'],ct:1,U:['en ett','två','tre','fyra','fem','sex','sju','åtta','nio'],X:['tio','elva','tolv','tretton','fjorton','femton','sexton','sjutton','arton','nitton'],T:['tjugo','trettio','fyrtio','femtio','sextio','sjuttio','åttio','nittio']},
-{c:'fi-FI',n:'Suomi',ig:['ja','numero'],ct:1,U:['yksi','kaksi','kolme','neljä','viisi','kuusi','seitsemän','kahdeksan','yhdeksän'],X:['kymmenen','yksitoista','kaksitoista','kolmetoista','neljätoista','viisitoista','kuusitoista','seitsemäntoista','kahdeksantoista','yhdeksäntoista'],T:['kaksikymmentä','kolmekymmentä','neljäkymmentä','viisikymmentä','kuusikymmentä','seitsemänkymmentä','kahdeksankymmentä','yhdeksänkymmentä']},
-{c:'de-DE',n:'Deutsch',ig:['und','nummer'],cu:'und',U:['eins ein eine','zwei zwo','drei','vier','fünf','sechs','sieben','acht','neun'],X:['zehn','elf','zwölf','dreizehn','vierzehn','fünfzehn','sechzehn','siebzehn','achtzehn','neunzehn'],T:['zwanzig','dreißig dreissig','vierzig','fünfzig','sechzig','siebzig','achtzig','neunzig']},
-{c:'en-GB',n:'English',ig:['and','number'],U:['one','two','three','four','five','six','seven','eight','nine'],X:['ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen'],T:['twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety']},
-{c:'bs-BA',n:'Bosanski',ig:['i','broj'],U:['jedan jedna jedno','dva dvije','tri','četiri cetiri','pet','šest sest','sedam','osam','devet'],X:['deset','jedanaest','dvanaest','trinaest','četrnaest cetrnaest','petnaest','šesnaest sesnaest','sedamnaest','osamnaest','devetnaest'],T:['dvadeset','trideset','četrdeset cetrdeset','pedeset','šezdeset sezdeset','sedamdeset','osamdeset','devedeset']},
-{c:'ru-RU',n:'Русский',ig:['и','номер'],U:['один одна одно','два две','три','четыре','пять','шесть','семь','восемь','девять'],X:['десять','одиннадцать','двенадцать','тринадцать','четырнадцать','пятнадцать','шестнадцать','семнадцать','восемнадцать','девятнадцать'],T:['двадцать','тридцать','сорок','пятьдесят','шестьдесят','семьдесят','восемьдесят','девяносто']}
-];
-function build(L){L.m={};
- L.U.forEach(function(s,i){s.split(' ').forEach(function(w){L.m[w]=[i+1,'u']})});
- L.X.forEach(function(s,i){s.split(' ').forEach(function(w){L.m[w]=[i+10,'x']})});
- L.T.forEach(function(s,i){s.split(' ').forEach(function(w){L.m[w]=[i*10+20,'t']})});
- function keys(k){return Object.keys(L.m).filter(function(w){return L.m[w][1]===k}).sort(function(x,y){return y.length-x.length})}
- var ul=keys('u').join('|'),tl=keys('t').join('|');
- if(L.cu)L.rcu=new RegExp('^('+ul+')'+L.cu+'('+tl+')$');
- if(L.ct)L.rct=new RegExp('^('+tl+')('+ul+')$');
- if(L.sfx)L.rsfx=new RegExp(L.sfx+'$')}
-LANGS.forEach(build);
-LANGS[0].al={tu:'to',toe:'to',tree:'tre',fir:'fire',sex:'seks',sæks:'seks',syve:'syv',sy:'syv',siv:'syv',åtte:'otte',åtten:'atten',otten:'atten',ny:'ni',nie:'ni',tie:'ti',elve:'elleve',eleve:'elleve',tolf:'tolv',trettn:'tretten',tredten:'tretten',fjortn:'fjorten',fjorden:'fjorten',femtn:'femten',sekstn:'seksten',sexten:'seksten',syttn:'sytten',sydten:'sytten',nittn:'nitten',tyvende:'tyve',tyv:'tyve',trediv:'tredive',fyre:'fyrre',fyrer:'fyrre',fyrr:'fyrre',fyrretyve:'fyrre',fires:'firs',fiers:'firs',halvtres:'halvtreds',halvtrads:'halvtreds',alvtreds:'halvtreds',trids:'treds',halvfjers:'halvfjerds',halvfjærds:'halvfjerds',alvfjerds:'halvfjerds',halvfemts:'halvfems',halvfæms:'halvfems',alvfems:'halvfems'};
-function lev(a,b){var m=[],i,j;for(i=0;i<=a.length;i++)m[i]=[i];for(j=1;j<=b.length;j++)m[0][j]=j;for(i=1;i<=a.length;i++)for(j=1;j<=b.length;j++)m[i][j]=Math.min(m[i-1][j]+1,m[i][j-1]+1,m[i-1][j-1]+(a[i-1]===b[j-1]?0:1));return m[a.length][b.length]}
-function fz(w,L){if(w.length<5)return null;var lim=w.length>=8?2:1,best=9,hit=null,amb=false;for(var k in L.m){if(k.length<4)continue;var d=lev(w,k);if(d>lim)continue;if(d<best){best=d;hit=L.m[k];amb=false}else if(d===best&&L.m[k][0]!==hit[0])amb=true}return amb?null:hit}
-function items(t,L){var tl=t.toLowerCase();if(L.c==='da-DK')tl=tl.replace(/halv\s+/g,'halv').replace(/(\S)\s+indstyve/g,'$1indstyve');var tk=tl.replace(/[^\p{L}\p{N}]+/gu,' ').trim().split(' '),out=[];if(!tk[0])return out;
- for(var i=0;i<tk.length;i++){var w=tk[i];if(L.rsfx)w=w.replace(L.rsfx,'');
-  if(L.ig.indexOf(w)>-1)continue;
-  if(/^\d+$/.test(w)){var v=parseInt(w,10);if(v<1||v>90)return [];out.push({v:v,k:v<10?'u':(v>=20&&v%10===0?'t':'x')});continue}
-  var m=L.m[w]||(L.al&&L.m[L.al[w]]);if(m){out.push({v:m[0],k:m[1]});continue}
-  var r=L.rcu&&w.match(L.rcu);if(r){out.push({v:L.m[r[1]][0]+L.m[r[2]][0],k:'x'});continue}
-  r=L.rct&&w.match(L.rct);if(r){out.push({v:L.m[r[1]][0]+L.m[r[2]][0],k:'x'});continue}
-  m=fz(w,L);if(m){out.push({v:m[0],k:m[1]});continue}
-  return []}
- return out}
-function merge(it){var res=[];for(var i=0;i<it.length;i++){var a=it[i],b=it[i+1];
- if(b&&((a.k==='u'&&b.k==='t')||(a.k==='t'&&b.k==='u'))){res.push(a.v+b.v);i++}
- else if(b&&a.k==='u'&&b.k==='u'&&a.v*10+b.v<=90){res.push(a.v*10+b.v);i++}
- else res.push(a.v)}
- return res.filter(function(n){return n>=1&&n<=90})}
-var LI=0;
-function parseNums(t){return merge(items(t,LANGS[LI]))}
-function strictNums(t){return parseNums(t)}
-var made=[];
-function markNum(n,rec){var hits=[];S.plates.forEach(function(pl,pi){var idx=pl.cells.indexOf(String(n));if(idx>-1){hits.push(pi+1);if(!pl.marks[idx]){pl.marks[idx]=true;buzz(pl,idx);if(rec)made.push({pl:pl,idx:idx,n:n})}}});return hits}
-function applyNums(ns,fin){if(S.edit||!ns.length)return;
- if(fin){made=made.filter(function(m){if(ns.indexOf(m.n)>-1)return true;m.pl.marks[m.idx]=false;return false})}
- var msg=[];ns.forEach(function(n){var h=markNum(n,!fin);msg.push(h.length?n+' ✓':n+' (ikke på dine plader)')});
- if(fin)made=[];
- save();render();toast('🎤 '+msg.join('   '))}
-var pend='',it,rdelay=300,waitNet=false;
-function wake(on){try{if(on&&navigator.wakeLock){navigator.wakeLock.request('screen').then(function(l){wl=l}).catch(function(){})}else if(!on&&wl){wl.release();wl=null}}catch(e){}}
-function setM(){mb.textContent=LS?'🎤 Lyt: til':'🎤 Lyt: fra';mb.classList.toggle('on',LS)}
-function stopListen(m){LS=false;try{if(rec)rec.stop()}catch(e){}wake(false);setM();if(m)toast(m)}
-function setPhrases(){try{if(typeof SpeechRecognitionPhrase!=='undefined'&&rec&&('phrases' in rec)){var ph=[];Object.keys(LANGS[LI].m).forEach(function(w){ph.push(new SpeechRecognitionPhrase(w,4.0))});rec.phrases=ph}}catch(e){}}
-function startListen(){if(!SR){toast('Din browser kan ikke lytte efter tale');return}
- rec=new SR();rec.lang=LANGS[LI].c;setPhrases();rec.continuous=true;rec.interimResults=true;rec.maxAlternatives=5;
- rec.onresult=function(e){rdelay=300;for(var i=e.resultIndex;i<e.results.length;i++){var r=e.results[i];if(r.isFinal){clearTimeout(it);pend='';var ns=[];for(var a=0;a<r.length&&!ns.length;a++)ns=strictNums(r[a].transcript);applyNums(ns,true);if(!ns.length){var tx=r[0].transcript.trim();if(!tx)toast('🎤 Hørte lyd, men ingen ord');else if(tx.split(/\s+/).length<=3)toast('🎤 Hørte "'+tx+'" – ikke et tal')}}else{var txt=r[0].transcript;pend=txt;clearTimeout(it);(function(t){it=setTimeout(function(){var ns=strictNums(t);if(ns.length&&pend===t)applyNums(ns,false)},450)})(txt)}}};
- rec.onerror=function(e){if(e.error==='not-allowed'||e.error==='service-not-allowed')stopListen('Mikrofon er blokeret – åbn siden direkte i Chrome og tillad mikrofon');else if(e.error==='network'){rdelay=Math.min(Math.max(rdelay*2,1500),6000);toast('Talegenkendelsen mistede forbindelsen (network) – prøver igen')}else if(e.error!=='no-speech'&&e.error!=='aborted')toast('Fejl: '+e.error)};
- rec.onend=function(){if(pend){var p=pend;pend='';applyNums(strictNums(p),true)}if(LS)setTimeout(function(){if(LS){try{rec.start()}catch(x){}}},rdelay)};
- LS=true;setM();try{rec.start();wake(true);toast('🎤 Lytter – råb numrene op')}catch(x){stopListen('Kunne ikke starte mikrofonen')}}
-mb.onclick=function(){if(LS)stopListen('Lytning slukket');else startListen()};
-var gb=document.getElementById('lang');
-try{var sl=localStorage.getItem('banko-lang');if(sl!==null&&LANGS[+sl])LI=+sl}catch(e){}
-function setG(){gb.textContent='🌐 '+LANGS[LI].n}
-gb.onclick=function(){LI=(LI+1)%LANGS.length;try{localStorage.setItem('banko-lang',LI)}catch(e){}setG();toast('🌐 '+LANGS[LI].n);if(rec){rec.lang=LANGS[LI].c;setPhrases();if(LS){try{rec.abort()}catch(e){}}}};
-setG();
-setM();
-var ce=document.getElementById('clk'),de=document.getElementById('dte');
-function tick(){var n=new Date();function z(x){return x<10?'0'+x:''+x}ce.textContent=z(n.getHours())+':'+z(n.getMinutes())+':'+z(n.getSeconds());de.textContent=n.toLocaleDateString('da-DK',{weekday:'short',day:'numeric',month:'short',year:'numeric'})}
-tick();setInterval(tick,1000);
-var fsb=document.getElementById('fs');
-var FSOFF=false;
-function reqFs(){try{var p=document.documentElement.requestFullscreen();if(p&&p.catch)p.catch(function(){})}catch(e){}}
-if(document.fullscreenEnabled){fsb.style.display='';
- fsb.onclick=function(){if(document.fullscreenElement){try{document.exitFullscreen()}catch(e){}}else{FSOFF=false;reqFs()}};
- document.addEventListener('fullscreenchange',function(){var b=document.body.classList;if(!document.fullscreenElement){FSOFF=true;b.remove('hp')}else if(!isLand()&&!S.edit){b.add('hp')}});
- document.addEventListener('click',function(){if(!FSOFF&&!document.fullscreenElement)reqFs()},true)}
+document.addEventListener('touchstart',function(e){var t=e.touches;tx=t.clientX<70?t.clientX:null},{passive:true});
+// Kald render i bunden for at tegne pladerne til at starte med
 render();
-if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})}
 </script>
 </body>
 </html>
