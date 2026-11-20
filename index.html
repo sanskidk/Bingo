@@ -228,14 +228,14 @@ sched();
 var SR=window.SpeechRecognition||window.webkitSpeechRecognition,LS=false,rec=null,wl=null,mb=document.getElementById('mic'),tt,tel=document.getElementById('toast');
 function toast(t){tel.textContent=t;tel.className='on';clearTimeout(tt);tt=setTimeout(function(){tel.className=''},2800)}
 var LANGS=[
-{c:'da-DK',n:'Dansk',ig:['og','nummer'],cu:'og',sfx:'indstyve',U:['en et','to','tre','fire','fem','seks','syv','otte','ni'],X:['ti','elleve','tolv','tretten','fjorten','femten','seksten','sytten','atten','nitten'],T:['tyve','tredive','fyrre','halvtreds','treds tres','halvfjerds','firs','halvfems']},
-{c:'nb-NO',n:'Norsk',ig:['og','nummer'],ct:1,U:['en ett','to','tre','fire','fem','seks','sju syv','åtte','ni'],X:['ti','elleve','tolv','tretten','fjorten','femten','seksten','sytten','atten','nitten'],T:['tjue tyve','tretti','førti','femti','seksti','sytti','åtti','nitti']},
-{c:'sv-SE',n:'Svenska',ig:['och','nummer'],ct:1,U:['en ett','två','tre','fyra','fem','sex','sju','åtta','nio'],X:['tio','elva','tolv','tretton','fjorton','femton','sexton','sjutton','arton','nitton'],T:['tjugo','trettio','fyrtio','femtio','sextio','sjuttio','åttio','nittio']},
-{c:'fi-FI',n:'Suomi',ig:['ja','numero'],ct:1,U:['yksi','kaksi','kolme','neljä','viisi','kuusi','seitsemän','kahdeksan','yhdeksän'],X:['kymmenen','yksitoista','kaksitoista','kolmetoista','neljätoista','viisitoista','kuusitoista','seitsemäntoista','kahdeksantoista','yhdeksäntoista'],T:['kaksikymmentä','kolmekymmentä','neljäkymmentä','viisikymmentä','kuusikymmentä','seitsemänkymmentä','kahdeksankymmentä','yhdeksänkymmentä']},
-{c:'de-DE',n:'Deutsch',ig:['und','nummer'],cu:'und',U:['eins ein eine','zwei zwo','drei','vier','fünf','sechs','sieben','acht','neun'],X:['zehn','elf','zwölf','dreizehn','vierzehn','fünfzehn','sechzehn','siebzehn','achtzehn','neunzehn'],T:['zwanzig','dreißig dreissig','vierzig','fünfzig','sechzig','siebzig','achtzig','neunzig']},
-{c:'en-GB',n:'English',ig:['and','number'],U:['one','two','three','four','five','six','seven','eight','nine'],X:['ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen'],T:['twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety']},
-{c:'bs-BA',n:'Bosanski',ig:['i','broj'],U:['jedan jedna jedno','dva dvije','tri','četiri cetiri','pet','šest sest','sedam','osam','devet'],X:['deset','jedanaest','dvanaest','trinaest','četrnaest cetrnaest','petnaest','šesnaest sesnaest','sedamnaest','osamnaest','devetnaest'],T:['dvadeset','trideset','četrdeset cetrdeset','pedeset','šezdeset sezdeset','sedamdeset','osamdeset','devedeset']},
-{c:'ru-RU',n:'Русский',ig:['и','номер'],U:['один одна одно','два две','три','четыре','пять','шесть','семь','восемь','девять'],X:['десять','одиннадцать','двенадцать','тринадцать','четырнадцать','пятнадцать','шестнадцать','семнадцать','восемнадцать','девятнадцать'],T:['двадцать','тридцать','сорок','пятьдесят','шестьдесят','семьдесят','восемьдесят','девяносто']}
+{c:'da-DK',n:'Dansk',ig:['og','nummer','numre','nr','tal','næste','banko'],cu:'og',sfx:'indstyve',U:['en et','to','tre','fire','fem','seks','syv','otte','ni'],X:['ti','elleve','tolv','tretten','fjorten','femten','seksten','sytten','atten','nitten'],T:['tyve','tredive','fyrre','halvtreds','treds tres','halvfjerds','firs','halvfems']},
+{c:'nb-NO',n:'Norsk',ig:['og','nummer','numre','nr','tall'],ct:1,U:['en ett','to','tre','fire','fem','seks','sju syv','åtte','ni'],X:['ti','elleve','tolv','tretten','fjorten','femten','seksten','sytten','atten','nitten'],T:['tjue tyve','tretti','førti','femti','seksti','sytti','åtti','nitti']},
+{c:'sv-SE',n:'Svenska',ig:['och','nummer','numret','nr','tal'],ct:1,U:['en ett','två','tre','fyra','fem','sex','sju','åtta','nio'],X:['tio','elva','tolv','tretton','fjorton','femton','sexton','sjutton','arton','nitton'],T:['tjugo','trettio','fyrtio','femtio','sextio','sjuttio','åttio','nittio']},
+{c:'fi-FI',n:'Suomi',ig:['ja','numero','numeron'],ct:1,U:['yksi','kaksi','kolme','neljä','viisi','kuusi','seitsemän','kahdeksan','yhdeksän'],X:['kymmenen','yksitoista','kaksitoista','kolmetoista','neljätoista','viisitoista','kuusitoista','seitsemäntoista','kahdeksantoista','yhdeksäntoista'],T:['kaksikymmentä','kolmekymmentä','neljäkymmentä','viisikymmentä','kuusikymmentä','seitsemänkymmentä','kahdeksankymmentä','yhdeksänkymmentä']},
+{c:'de-DE',n:'Deutsch',ig:['und','nummer','nummer','nr','zahl'],cu:'und',U:['eins ein eine','zwei zwo','drei','vier','fünf','sechs','sieben','acht','neun'],X:['zehn','elf','zwölf','dreizehn','vierzehn','fünfzehn','sechzehn','siebzehn','achtzehn','neunzehn'],T:['zwanzig','dreißig dreissig','vierzig','fünfzig','sechzig','siebzig','achtzig','neunzig']},
+{c:'en-GB',n:'English',ig:['and','number','numbers','nr','next'],U:['one','two','three','four','five','six','seven','eight','nine'],X:['ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen'],T:['twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety']},
+{c:'bs-BA',n:'Bosanski',ig:['i','broj','brojevi'],U:['jedan jedna jedno','dva dvije','tri','četiri cetiri','pet','šest sest','sedam','osam','devet'],X:['deset','jedanaest','dvanaest','trinaest','četrnaest cetrnaest','petnaest','šesnaest sesnaest','sedamnaest','osamnaest','devetnaest'],T:['dvadeset','trideset','četrdeset cetrdeset','pedeset','šezdeset sezdeset','sedamdeset','osamdeset','devedeset']},
+{c:'ru-RU',n:'Русский',ig:['и','номер','номера'],U:['один одна одно','два две','три','четыре','пять','шесть','семь','восемь','девять'],X:['десять','одиннадцать','двенадцать','тринадцать','четырнадцать','пятнадцать','шестнадцать','семнадцать','восемнадцать','девятнадцать'],T:['двадцать','тридцать','сорок','пятьдесят','шестьдесят','семьдесят','восемьдесят','девяносто']}
 ];
 function build(L){L.m={};
  L.U.forEach(function(s,i){s.split(' ').forEach(function(w){L.m[w]=[i+1,'u']})});
@@ -250,7 +250,11 @@ LANGS.forEach(build);
 LANGS[0].al={tu:'to',toe:'to',tree:'tre',fir:'fire',sex:'seks',sæks:'seks',syve:'syv',sy:'syv',siv:'syv',åtte:'otte',åtten:'atten',otten:'atten',ny:'ni',nie:'ni',tie:'ti',elve:'elleve',eleve:'elleve',tolf:'tolv',trettn:'tretten',tredten:'tretten',fjortn:'fjorten',fjorden:'fjorten',femtn:'femten',sekstn:'seksten',sexten:'seksten',syttn:'sytten',sydten:'sytten',nittn:'nitten',tyvende:'tyve',tyv:'tyve',trediv:'tredive',fyre:'fyrre',fyrer:'fyrre',fyrr:'fyrre',fyrretyve:'fyrre',fires:'firs',fiers:'firs',halvtres:'halvtreds',halvtrads:'halvtreds',alvtreds:'halvtreds',trids:'treds',halvfjers:'halvfjerds',halvfjærds:'halvfjerds',alvfjerds:'halvfjerds',halvfemts:'halvfems',halvfæms:'halvfems',alvfems:'halvfems'};
 function lev(a,b){var m=[],i,j;for(i=0;i<=a.length;i++)m[i]=[i];for(j=1;j<=b.length;j++)m[0][j]=j;for(i=1;i<=a.length;i++)for(j=1;j<=b.length;j++)m[i][j]=Math.min(m[i-1][j]+1,m[i][j-1]+1,m[i-1][j-1]+(a[i-1]===b[j-1]?0:1));return m[a.length][b.length]}
 function fz(w,L){if(w.length<5)return null;var lim=w.length>=8?2:1,best=9,hit=null,amb=false;for(var k in L.m){if(k.length<4)continue;var d=lev(w,k);if(d>lim)continue;if(d<best){best=d;hit=L.m[k];amb=false}else if(d===best&&L.m[k][0]!==hit[0])amb=true}return amb?null:hit}
-function items(t,L){var tl=t.toLowerCase();if(L.c==='da-DK')tl=tl.replace(/halv\s+/g,'halv').replace(/(\S)\s+indstyve/g,'$1indstyve');var tk=tl.replace(/[^\p{L}\p{N}]+/gu,' ').trim().split(' '),out=[];if(!tk[0])return out;
+function items(t,L){var tl=t.toLowerCase();
+ // Fjern almindelige bære-ord ("nummer 8", "number eight" osv.)
+ tl=tl.replace(/\b(nummer|numre|nummeret|nr|tal|number|numbers|numero|broj|номер)\b/gi,' ');
+ if(L.c==='da-DK')tl=tl.replace(/halv\s+/g,'halv').replace(/(\S)\s+indstyve/g,'$1indstyve');
+ var tk=tl.replace(/[^\p{L}\p{N}]+/gu,' ').trim().split(' '),out=[];if(!tk[0])return out;
  for(var i=0;i<tk.length;i++){var w=tk[i];if(L.rsfx)w=w.replace(L.rsfx,'');
   if(L.ig.indexOf(w)>-1)continue;
   if(/^\d+$/.test(w)){var v=parseInt(w,10);if(v<1||v>90)return [];out.push({v:v,k:v<10?'u':(v>=20&&v%10===0?'t':'x')});continue}
@@ -289,7 +293,8 @@ function handleSpoken(ns,isFinal){
   var now=Date.now();
   // Hvis det er et enkelt ciffer 1-9, overvej kombination med forrige
   if(ns.length===1 && ns[0]>=1 && ns[0]<=9){
-    if(pendDigit && (now-pendDigit.t)<700){
+    if(pendDigit && (now-pendDigit.t)<700 && pendDigit.v !== ns[0]){
+      // Kun kombiner hvis det er TO FORSKELLIGE cifre (undgår at "nummer 8" bliver til 88)
       var combined=pendDigit.v*10+ns[0];
       if(combined<=90){
         clearTimeout(pendDigit.timer);
