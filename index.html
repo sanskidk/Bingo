@@ -508,21 +508,22 @@ function handleSpoken(ns,isFinal){
   if(pendDigit){clearTimeout(pendDigit.timer);pendDigit=null}
   applyNums(ns);
 }
-var pend='',it,rdelay=200,watchTimer=null,keepAlive=null,lastHeard=0;
+var pend='',it,rdelay=50,watchTimer=null,keepAlive=null,lastHeard=0,restarting=false;
 function wake(on){try{if(on&&navigator.wakeLock){navigator.wakeLock.request('screen').then(function(l){wl=l}).catch(function(){})}else if(!on&&wl){wl.release();wl=null}}catch(e){}}
 function setM(){mb.textContent=LS?t('micOn'):t('micOff');mb.classList.toggle('on',LS)}
 function armWatch(){
   lastHeard=Date.now();
   clearTimeout(watchTimer);
-  // Genstart hvis ingen tale i 4 sek – holder mikrofonen vågen
-  watchTimer=setTimeout(function(){if(LS)restartRec()},4000);
+  // Efter 2,5 sek stilhed: frisk session klar til næste råb
+  watchTimer=setTimeout(function(){if(LS&&!restarting)restartRec()},2500);
 }
 function restartRec(){
-  if(!LS||!SR)return;
+  if(!LS||!SR||restarting)return;
+  restarting=true;
   try{if(rec){try{rec.onend=null;rec.onerror=null;rec.onresult=null;rec.abort()}catch(e){try{rec.stop()}catch(e2){}}}}catch(e){}
   rec=null;
   setTimeout(function(){
-    if(!LS)return;
+    if(!LS){restarting=false;return}
     try{
       rec=new SR();
       rec.lang=LANGS[LI].c;
@@ -534,12 +535,14 @@ function restartRec(){
       rec.onerror=onRecError;
       rec.onend=onRecEnd;
       rec.start();
+      lastHeard=Date.now();
+      restarting=false;
       armWatch();
-    }catch(x){setTimeout(function(){if(LS)restartRec()},600)}
-  },150);
+    }catch(x){restarting=false;setTimeout(function(){if(LS)restartRec()},400)}
+  },60);
 }
 function onRecResult(e){
-  rdelay=200;armWatch();
+  rdelay=50;armWatch();
   for(var i=e.resultIndex;i<e.results.length;i++){
     var r=e.results[i];
     if(r.isFinal){
@@ -560,29 +563,25 @@ function onRecResult(e){
 }
 function onRecError(e){
   if(e.error==='not-allowed'||e.error==='service-not-allowed'){stopListen(t('micBlocked'));return}
-  if(e.error==='network'){rdelay=Math.min(Math.max(rdelay*2,800),3000)}
-  // Ved alle andre fejl (no-speech, aborted …) genstartes via onend
 }
 function onRecEnd(){
   if(pend){var p=pend;pend='';handleSpoken(strictNums(p),true)}
   clearPendDigit(true);
-  // Altid fuld genstart – rec.start() på gammel instans fejler ofte efter pause
-  if(LS)setTimeout(function(){if(LS)restartRec()},rdelay);
+  if(LS&&!restarting)setTimeout(function(){if(LS)restartRec()},rdelay);
 }
 function stopListen(m){
-  LS=false;clearPendDigit(true);clearTimeout(watchTimer);clearInterval(keepAlive);
+  LS=false;clearPendDigit(true);clearTimeout(watchTimer);clearInterval(keepAlive);restarting=false;
   try{if(rec){rec.onend=null;rec.onerror=null;rec.abort()}}catch(e){}
   rec=null;wake(false);setM();if(m)toast(m);
 }
 function setPhrases(){try{if(typeof SpeechRecognitionPhrase!=='undefined'&&rec&&('phrases' in rec)){var ph=[];Object.keys(LANGS[LI].m).forEach(function(w){ph.push(new SpeechRecognitionPhrase(w,4.0))});rec.phrases=ph}}catch(e){}}
 function startListen(){if(!SR){toast(t('noSpeech'));return}
  LS=true;setM();wake(true);toast(t('listening'));restartRec();
- // Ekstra sikkerhed: tjek hvert 5. sek at lytningen stadig kører
  clearInterval(keepAlive);
  keepAlive=setInterval(function(){
    if(!LS)return;
-   if(Date.now()-lastHeard>5000)restartRec();
- },5000)}
+   if(Date.now()-lastHeard>3000)restartRec();
+ },3000)}
 mb.onclick=function(){if(LS){clearPendDigit(true);stopListen(t('listenOff'))}else startListen()};
 var gb=document.getElementById('lang');
 try{var sl=localStorage.getItem('banko-lang');if(sl!==null&&LANGS[+sl])LI=+sl;else LI=0}catch(e){LI=0}
