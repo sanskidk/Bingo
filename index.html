@@ -484,6 +484,7 @@ function clearPendDigit(commit){
 function handleSpoken(ns,isFinal){
   if(S.edit||!ns||!ns.length)return;
   var now=Date.now();
+  // Enkeltcifre: vent med at markere – de kan være starten på et tocifret tal (fx 2 → 21)
   if(ns.length===1 && ns[0]>=1 && ns[0]<=9){
     if(pendDigit && (now-pendDigit.t)<450 && pendDigit.v !== ns[0]){
       var combined=pendDigit.v*10+ns[0];
@@ -494,14 +495,17 @@ function handleSpoken(ns,isFinal){
         return;
       }
     }
-    clearPendDigit(true);
+    // Gem cifferet, men marker det IKKE endnu ved interim
+    if(pendDigit){clearTimeout(pendDigit.timer)}
     pendDigit={v:ns[0],t:now,timer:setTimeout(function(){
       if(pendDigit){applyNums([pendDigit.v]);pendDigit=null}
-    },500)};
-    applyNums(ns);
+    },600)};
+    // Kun marker med det samme hvis det er endeligt resultat
+    if(isFinal){clearTimeout(pendDigit.timer);pendDigit=null;applyNums(ns)}
     return;
   }
-  clearPendDigit(true);
+  // Tocifret/fuldt nummer: smid evt. ventende enkeltciffer VÆK (ikke commit)
+  if(pendDigit){clearTimeout(pendDigit.timer);pendDigit=null}
   applyNums(ns);
 }
 var pend='',it,rdelay=250,watchTimer=null;
