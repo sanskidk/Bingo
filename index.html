@@ -229,7 +229,13 @@ vb.onclick=function(){VIB=!VIB;try{localStorage.setItem('banko-vib',VIB?'1':'0')
 setV();
 var ht,gp=document.getElementById('grip'),barEl=document.querySelector('.bar'),tx=null;
 function isLand(){return window.matchMedia('(orientation:landscape)').matches}
-function hideBar(){if(S.edit||rb.dataset.s){sched();return}if(isLand())document.body.classList.add('hb');else if(document.fullscreenElement)document.body.classList.add('hp')}
+function hideBar(){
+  // Kun auto-skjul når fuldskærm er aktiv (knappen er gul)
+  if(!document.fullscreenElement){document.body.classList.remove('hb','hp');return}
+  if(S.edit||rb.dataset.s){sched();return}
+  if(isLand())document.body.classList.add('hb');
+  else document.body.classList.add('hp');
+}
 function showBar(){document.body.classList.remove('hb');document.body.classList.remove('hp');sched()}
 function sched(){clearTimeout(ht);ht=setTimeout(hideBar,6000)}
 gp.onclick=showBar;document.getElementById('ptab').onclick=showBar;
@@ -496,12 +502,23 @@ var ce=document.getElementById('clk'),de=document.getElementById('dte');
 function tick(){var n=new Date();function z(x){return x<10?'0'+x:''+x}ce.textContent=z(n.getHours())+':'+z(n.getMinutes())+':'+z(n.getSeconds());de.textContent=n.toLocaleDateString('da-DK',{weekday:'short',day:'numeric',month:'short',year:'numeric'})}
 tick();setInterval(tick,1000);
 var fsb=document.getElementById('fs');
-var FSOFF=false;
 function reqFs(){try{var p=document.documentElement.requestFullscreen();if(p&&p.catch)p.catch(function(){})}catch(e){}}
-if(document.fullscreenEnabled){fsb.style.display='';
- fsb.onclick=function(){if(document.fullscreenElement){try{document.exitFullscreen()}catch(e){}}else{FSOFF=false;reqFs()}};
- document.addEventListener('fullscreenchange',function(){var b=document.body.classList;if(!document.fullscreenElement){FSOFF=true;b.remove('hp')}else if(!isLand()&&!S.edit){b.add('hp')}});
- document.addEventListener('click',function(){if(!FSOFF&&!document.fullscreenElement)reqFs()},true)}
+function updateFsBtn(){
+  if(document.fullscreenElement){fsb.classList.add('on');fsb.textContent='⛶'}
+  else{fsb.classList.remove('on');fsb.textContent='⛶';document.body.classList.remove('hb','hp')}
+}
+if(document.fullscreenEnabled){
+  fsb.style.display='';
+  fsb.onclick=function(){
+    if(document.fullscreenElement){try{document.exitFullscreen()}catch(e){}}
+    else reqFs();
+  };
+  document.addEventListener('fullscreenchange',function(){
+    updateFsBtn();
+    if(document.fullscreenElement) sched(); // start auto-skjul når fuldskærm tændes
+  });
+}
+updateFsBtn();
 render();
 if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})}
 </script>
