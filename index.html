@@ -112,8 +112,8 @@ body.hb #grip{width:18px;height:70px;font-size:14px}
   <button class="t" id="chk">Tjek tal</button>
   <button class="t" id="lay"></button>
   <button class="t" id="thm"></button>
-  <button class="t" id="vib"></button>
   <button class="t" id="lang"></button>
+  <button class="t" id="vib"></button>
   <button class="t" id="mic"></button>
   <button class="t" id="fs" style="display:none">⛶</button>
   <button class="t" id="reset">Ryd markeringer</button>
@@ -224,7 +224,7 @@ var VIB=true,vb=document.getElementById('vib');
 try{VIB=localStorage.getItem('banko-vib')!=='0'}catch(e){}
 function vibe(p){try{if(navigator.vibrate)navigator.vibrate(p)}catch(e){}}
 function buzz(pl,i){if(!VIB)return;var r=Math.floor(i/9),rowDone=true,all=true;for(var k=0;k<27;k++){if(pl.cells[k]!==''&&!pl.marks[k]){all=false;if(Math.floor(k/9)===r)rowDone=false}}if(all)vibe([300,120,300,120,300]);else if(rowDone)vibe(250)}
-function setV(){vb.textContent=VIB?t('vibOn'):t('vibOff')}
+function setV(){vb.textContent=t('vib');vb.classList.toggle('on',VIB)}
 vb.onclick=function(){VIB=!VIB;try{localStorage.setItem('banko-vib',VIB?'1':'0')}catch(e){}setV();if(VIB)vibe(60)};
 setV();
 var ht,gp=document.getElementById('grip'),barEl=document.querySelector('.bar'),tx=null;
@@ -265,7 +265,7 @@ var UI=[
   add:"+ Plade", check:"Tjek tal",
   lay2:"2 bredt", lay3:"3 bredt",
   theme:{auto:"Auto",light:"Lys",dark:"Mørk",blue:"Blå",green:"Grøn",contrast:"Kontrast"},
-  vibOn:"📳 Vibration til", vibOff:"📳 Vibration fra",
+  vib:"📳 Vibration",
   micOn:"🎤 Lyt: til", micOff:"🎤 Lyt: fra",
   reset:"Ryd markeringer", resetConfirm:"Tryk igen for at rydde",
   plate:"Plade", del:"Slet", delConfirm:"Sikker?",
@@ -273,7 +273,8 @@ var UI=[
   listening:"🎤 Lytter – råb numrene op",
   micBlocked:"Mikrofon er blokeret – åbn siden direkte i Chrome og tillad mikrofon",
   noSpeech:"Din browser kan ikke lytte efter tale",
-  listenOff:"Lytning slukket"
+  listenOff:"Lytning slukket",
+  fs:"⛶ Fuldskærm"
 },
 { // no
   edit:"Rediger tall", editDone:"✓ Ferdig med å taste",
@@ -282,7 +283,7 @@ var UI=[
   add:"+ Plate", check:"Sjekk tall",
   lay2:"2 bredt", lay3:"3 bredt",
   theme:{auto:"Auto",light:"Lys",dark:"Mørk",blue:"Blå",green:"Grønn",contrast:"Kontrast"},
-  vibOn:"📳 Vibrasjon på", vibOff:"📳 Vibrasjon av",
+  vib:"📳 Vibrasjon",
   micOn:"🎤 Lytt: på", micOff:"🎤 Lytt: av",
   reset:"Nullstill markeringer", resetConfirm:"Trykk igjen for å nullstille",
   plate:"Plate", del:"Slett", delConfirm:"Sikker?",
@@ -290,7 +291,8 @@ var UI=[
   listening:"🎤 Lytter – rop tallene",
   micBlocked:"Mikrofon er blokkert – åpne siden i Chrome og tillat mikrofon",
   noSpeech:"Nettleseren din kan ikke lytte etter tale",
-  listenOff:"Lytting av"
+  listenOff:"Lytting av",
+  fs:"⛶ Fullskjerm"
 },
 { // sv
   edit:"Redigera tal", editDone:"✓ Klar med inmatning",
@@ -299,7 +301,7 @@ var UI=[
   add:"+ Bricka", check:"Kontrollera tal",
   lay2:"2 bred", lay3:"3 bred",
   theme:{auto:"Auto",light:"Ljus",dark:"Mörk",blue:"Blå",green:"Grön",contrast:"Kontrast"},
-  vibOn:"📳 Vibration på", vibOff:"📳 Vibration av",
+  vib:"📳 Vibration",
   micOn:"🎤 Lyssna: på", micOff:"🎤 Lyssna: av",
   reset:"Rensa markeringar", resetConfirm:"Tryck igen för att rensa",
   plate:"Bricka", del:"Ta bort", delConfirm:"Säker?",
@@ -307,7 +309,8 @@ var UI=[
   listening:"🎤 Lyssnar – ropa upp siffrorna",
   micBlocked:"Mikrofonen är blockerad – öppna sidan i Chrome och tillåt mikrofon",
   noSpeech:"Din webbläsare kan inte lyssna efter tal",
-  listenOff:"Lyssning av"
+  listenOff:"Lyssning av",
+  fs:"⛶ Helskärm"
 },
 { // fi
   edit:"Muokkaa numeroita", editDone:"✓ Valmis",
@@ -316,7 +319,7 @@ var UI=[
   add:"+ Lautanen", check:"Tarkista numerot",
   lay2:"2 leveä", lay3:"3 leveä",
   theme:{auto:"Auto",light:"Vaalea",dark:"Tumma",blue:"Sininen",green:"Vihreä",contrast:"Kontrasti"},
-  vibOn:"📳 Värinä päällä", vibOff:"📳 Värinä pois",
+  vib:"📳 Värinä",
   micOn:"🎤 Kuuntele: päällä", micOff:"🎤 Kuuntele: pois",
   reset:"Tyhjennä merkinnät", resetConfirm:"Paina uudelleen tyhjentääksesi",
   plate:"Lautanen", del:"Poista", delConfirm:"Varma?",
@@ -324,7 +327,8 @@ var UI=[
   listening:"🎤 Kuuntelee – huuda numerot",
   micBlocked:"Mikrofoni estetty – avaa sivu Chromessa ja salli mikrofoni",
   noSpeech:"Selaimesi ei voi kuunnella puhetta",
-  listenOff:"Kuuntelu pois"
+  listenOff:"Kuuntelu pois",
+  fs:"⛶ Koko näyttö"
 },
 { // de
   edit:"Zahlen bearbeiten", editDone:"✓ Fertig",
@@ -333,7 +337,7 @@ var UI=[
   add:"+ Karte", check:"Zahlen prüfen",
   lay2:"2 breit", lay3:"3 breit",
   theme:{auto:"Auto",light:"Hell",dark:"Dunkel",blue:"Blau",green:"Grün",contrast:"Kontrast"},
-  vibOn:"📳 Vibration an", vibOff:"📳 Vibration aus",
+  vib:"📳 Vibration",
   micOn:"🎤 Hören: an", micOff:"🎤 Hören: aus",
   reset:"Markierungen löschen", resetConfirm:"Nochmal tippen zum Löschen",
   plate:"Karte", del:"Löschen", delConfirm:"Sicher?",
@@ -341,7 +345,8 @@ var UI=[
   listening:"🎤 Hört zu – ruf die Zahlen",
   micBlocked:"Mikrofon blockiert – Seite in Chrome öffnen und Mikrofon erlauben",
   noSpeech:"Dein Browser kann keine Sprache erkennen",
-  listenOff:"Zuhören aus"
+  listenOff:"Zuhören aus",
+  fs:"⛶ Vollbild"
 },
 { // en
   edit:"Edit numbers", editDone:"✓ Done editing",
@@ -350,7 +355,7 @@ var UI=[
   add:"+ Card", check:"Check numbers",
   lay2:"2 wide", lay3:"3 wide",
   theme:{auto:"Auto",light:"Light",dark:"Dark",blue:"Blue",green:"Green",contrast:"Contrast"},
-  vibOn:"📳 Vibration on", vibOff:"📳 Vibration off",
+  vib:"📳 Vibration",
   micOn:"🎤 Listen: on", micOff:"🎤 Listen: off",
   reset:"Clear marks", resetConfirm:"Tap again to clear",
   plate:"Card", del:"Delete", delConfirm:"Sure?",
@@ -358,7 +363,8 @@ var UI=[
   listening:"🎤 Listening – call the numbers",
   micBlocked:"Microphone blocked – open the page in Chrome and allow mic",
   noSpeech:"Your browser cannot listen for speech",
-  listenOff:"Listening off"
+  listenOff:"Listening off",
+  fs:"⛶ Fullscreen"
 },
 { // bs
   edit:"Uredi brojeve", editDone:"✓ Gotovo",
@@ -367,7 +373,7 @@ var UI=[
   add:"+ Ploča", check:"Provjeri brojeve",
   lay2:"2 široko", lay3:"3 široko",
   theme:{auto:"Auto",light:"Svijetlo",dark:"Tamno",blue:"Plavo",green:"Zeleno",contrast:"Kontrast"},
-  vibOn:"📳 Vibracija uključena", vibOff:"📳 Vibracija isključena",
+  vib:"📳 Vibracija",
   micOn:"🎤 Slušaj: uključeno", micOff:"🎤 Slušaj: isključeno",
   reset:"Obriši oznake", resetConfirm:"Dodirnite ponovo da obrišete",
   plate:"Ploča", del:"Obriši", delConfirm:"Sigurno?",
@@ -375,7 +381,8 @@ var UI=[
   listening:"🎤 Slušam – izgovorite brojeve",
   micBlocked:"Mikrofon je blokiran – otvorite stranicu u Chromeu i dozvolite mikrofon",
   noSpeech:"Vaš preglednik ne može slušati govor",
-  listenOff:"Slušanje isključeno"
+  listenOff:"Slušanje isključeno",
+  fs:"⛶ Cijeli ekran"
 },
 { // ru
   edit:"Редактировать", editDone:"✓ Готово",
@@ -384,7 +391,7 @@ var UI=[
   add:"+ Карточка", check:"Проверить числа",
   lay2:"2 в ряд", lay3:"3 в ряд",
   theme:{auto:"Авто",light:"Светлая",dark:"Тёмная",blue:"Синяя",green:"Зелёная",contrast:"Контраст"},
-  vibOn:"📳 Вибрация вкл", vibOff:"📳 Вибрация выкл",
+  vib:"📳 Вибрация",
   micOn:"🎤 Слушать: вкл", micOff:"🎤 Слушать: выкл",
   reset:"Очистить отметки", resetConfirm:"Нажмите ещё раз для очистки",
   plate:"Карточка", del:"Удалить", delConfirm:"Точно?",
@@ -392,7 +399,8 @@ var UI=[
   listening:"🎤 Слушаю – называйте числа",
   micBlocked:"Микрофон заблокирован – откройте страницу в Chrome и разрешите микрофон",
   noSpeech:"Ваш браузер не может распознавать речь",
-  listenOff:"Прослушивание выкл"
+  listenOff:"Прослушивание выкл",
+  fs:"⛶ Полный экран"
 }
 ];
 
@@ -490,9 +498,29 @@ function startListen(){if(!SR){toast(t('noSpeech'));return}
 mb.onclick=function(){if(LS){clearPendDigit(true);stopListen(t('listenOff'))}else startListen()};
 var gb=document.getElementById('lang');
 try{var sl=localStorage.getItem('banko-lang');if(sl!==null&&LANGS[+sl])LI=+sl;else LI=0}catch(e){LI=0}
+var fsb=document.getElementById('fs');
+function reqFs(){try{var p=document.documentElement.requestFullscreen();if(p&&p.catch)p.catch(function(){})}catch(e){}}
+function updateFsBtn(){
+  if(!fsb)return;
+  fsb.textContent=t('fs');
+  if(document.fullscreenElement){fsb.classList.add('on')}
+  else{fsb.classList.remove('on');document.body.classList.remove('hb','hp')}
+}
+if(document.fullscreenEnabled && fsb){
+  fsb.style.display='';
+  fsb.onclick=function(){
+    if(document.fullscreenElement){try{document.exitFullscreen()}catch(e){}}
+    else reqFs();
+  };
+  document.addEventListener('fullscreenchange',function(){
+    updateFsBtn();
+    if(document.fullscreenElement) sched();
+  });
+}
 function setG(){gb.textContent='🌐 '+LANGS[LI].n}
 function refreshUI(){
   setG();setM();setV();setT();setL();
+  updateFsBtn();
   rbOff();
   render();
 }
@@ -501,24 +529,6 @@ refreshUI();
 var ce=document.getElementById('clk'),de=document.getElementById('dte');
 function tick(){var n=new Date();function z(x){return x<10?'0'+x:''+x}ce.textContent=z(n.getHours())+':'+z(n.getMinutes())+':'+z(n.getSeconds());de.textContent=n.toLocaleDateString('da-DK',{weekday:'short',day:'numeric',month:'short',year:'numeric'})}
 tick();setInterval(tick,1000);
-var fsb=document.getElementById('fs');
-function reqFs(){try{var p=document.documentElement.requestFullscreen();if(p&&p.catch)p.catch(function(){})}catch(e){}}
-function updateFsBtn(){
-  if(document.fullscreenElement){fsb.classList.add('on');fsb.textContent='⛶'}
-  else{fsb.classList.remove('on');fsb.textContent='⛶';document.body.classList.remove('hb','hp')}
-}
-if(document.fullscreenEnabled){
-  fsb.style.display='';
-  fsb.onclick=function(){
-    if(document.fullscreenElement){try{document.exitFullscreen()}catch(e){}}
-    else reqFs();
-  };
-  document.addEventListener('fullscreenchange',function(){
-    updateFsBtn();
-    if(document.fullscreenElement) sched(); // start auto-skjul når fuldskærm tændes
-  });
-}
-updateFsBtn();
 render();
 if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})}
 </script>
