@@ -438,12 +438,10 @@ function merge(it){var res=[];for(var i=0;i<it.length;i++){var a=it[i],b=it[i+1]
  return res.filter(function(n){return n>=1&&n<=90})}
 function parseNums(t){return merge(items(t,LANGS[LI]))}
 function strictNums(t){return parseNums(t)}
-var made=[];
-function markNum(n,rec){var hits=[],s=String(n);S.plates.forEach(function(pl,pi){var found=false;for(var idx=0;idx<pl.cells.length;idx++){if(pl.cells[idx]===s){found=true;if(!pl.marks[idx]){pl.marks[idx]=true;buzz(pl,idx);if(rec)made.push({pl:pl,idx:idx,n:n})}}}if(found)hits.push(pi+1)});return hits}
-function applyNums(ns,fin){if(S.edit||!ns.length)return;
- if(fin){made=made.filter(function(m){if(ns.indexOf(m.n)>-1)return true;m.pl.marks[m.idx]=false;return false})}
- var msg=[];ns.forEach(function(n){var h=markNum(n,!fin);msg.push(h.length?n+' ✓':n+' (ikke på dine plader)')});
- if(fin)made=[];
+function markNum(n){var hits=[],s=String(n);S.plates.forEach(function(pl,pi){var found=false;for(var idx=0;idx<pl.cells.length;idx++){if(pl.cells[idx]===s){found=true;if(!pl.marks[idx]){pl.marks[idx]=true;buzz(pl,idx)}}}if(found)hits.push(pi+1)});return hits}
+function applyNums(ns){if(S.edit||!ns.length)return;
+ // Tale må KUN markere – aldrig afmarkere et tidligere tal
+ var msg=[];ns.forEach(function(n){var h=markNum(n);msg.push(h.length?n+' ✓':n+' (ikke på dine plader)')});
  save();render();toast('🎤 '+msg.join('   '))}
 
 // Tidsbaseret kombination af enkeltcifre (fx "to" + "tre" → 23 hvis sagt inden for ca. 0,5-0,8 sek)
@@ -451,7 +449,7 @@ var pendDigit=null; // {v, t, timer}
 function clearPendDigit(commit){
   if(!pendDigit)return;
   clearTimeout(pendDigit.timer);
-  if(commit) applyNums([pendDigit.v],true);
+  if(commit) applyNums([pendDigit.v]);
   pendDigit=null;
 }
 function handleSpoken(ns,isFinal){
@@ -464,25 +462,23 @@ function handleSpoken(ns,isFinal){
       var combined=pendDigit.v*10+ns[0];
       if(combined<=90){
         clearTimeout(pendDigit.timer);
-        // Fjern evt. provisorisk markering af det første ciffer
-        made=made.filter(function(m){if(m.n===pendDigit.v){m.pl.marks[m.idx]=false;return false}return true});
         pendDigit=null;
-        applyNums([combined],isFinal);
+        applyNums([combined]);
         return;
       }
     }
     // Start ny ventetid på muligt andet ciffer
     clearPendDigit(true); // commit forrige hvis der var en
     pendDigit={v:ns[0],t:now,timer:setTimeout(function(){
-      if(pendDigit){applyNums([pendDigit.v],true);pendDigit=null}
+      if(pendDigit){applyNums([pendDigit.v]);pendDigit=null}
     },900)};
-    // Vis provisorisk hvis interim
-    if(!isFinal) applyNums(ns,false);
+    // Marker provisorisk ved interim (må gerne – vi afmarkerer aldrig automatisk)
+    if(!isFinal) applyNums(ns);
     return;
   }
   // Almindeligt nummer (eller flere) – commit evt. ventende ciffer først
   clearPendDigit(true);
-  applyNums(ns,isFinal);
+  applyNums(ns);
 }
 var pend='',it,rdelay=300,waitNet=false;
 function wake(on){try{if(on&&navigator.wakeLock){navigator.wakeLock.request('screen').then(function(l){wl=l}).catch(function(){})}else if(!on&&wl){wl.release();wl=null}}catch(e){}}

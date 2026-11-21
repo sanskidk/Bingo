@@ -1,5 +1,5 @@
 // Skift versionsnummer, når du uploader en ny version af appen
-var CACHE='banko-v29';
+var CACHE='banko-v30';
 var FILES=['./','./index.html','./manifest.json','./icon-192.png','./icon-512.png','./icon-maskable-512.png'];
 self.addEventListener('install',function(e){
 e.waitUntil(caches.open(CACHE).then(function(c){return c.addAll(FILES)}));
