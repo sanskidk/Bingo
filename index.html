@@ -127,6 +127,8 @@ body.hb #grip{width:18px;height:70px;font-size:14px}
 <div id="toast"></div>
 <script>
 var KEY="banko-v3";
+var LI=0;
+try{var sl0=localStorage.getItem('banko-lang');if(sl0!==null)LI=+sl0||0}catch(e){}
 function blank(){return{cells:Array(27).fill(""),marks:Array(27).fill(false)}}
 var D=['8 - 21 - - 55 61 75 - | 9 - - 35 43 56 - - 86 | - 17 23 - 46 - 64 - 89','- 11 - 31 44 50 - 70 - | 2 13 26 - - - 67 78 - | - 18 - 37 - 54 - 79 81','1 - - - 41 59 65 - 88 | 3 - 20 30 45 - - 72 - | - 19 25 33 - - 69 - 90','- - 24 32 40 - - 76 83 | 6 - 28 - 42 52 62 - - | 7 15 - 34 - 57 - - 84','4 12 - - - 53 - 71 80 | - 14 - 38 - - 60 73 82 | - 16 22 - 47 - 68 - 85','- 10 27 - 48 51 63 - - | - - 29 36 49 - 66 74 - | 5 - - 39 - 58 - 77 87'];
 function mk(s){var t=s.replace(/\|/g,' ').split(/\s+/).filter(Boolean).map(function(x){return x==='-'?'':x});return{cells:t,marks:Array(27).fill(false)}}
@@ -134,10 +136,14 @@ var S={plates:D.map(mk),edit:false};
 try{var r=localStorage.getItem(KEY);if(r){var p=JSON.parse(r);if(p&&p.plates&&p.plates.length)S=p}}catch(e){}
 if(S.plates.length>12)S.plates.length=12;
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function t(key){try{return (UI[LI]&&UI[LI][key])||UI[0][key]||key}catch(e){return key}}
+function tTheme(k){try{return (UI[LI]&&UI[LI].theme&&UI[LI].theme[k])||UI[0].theme[k]||k}catch(e){return k}}
 function render(){
-  document.getElementById("edit").textContent=S.edit?"✓ Færdig med at taste":"Rediger tal";
+  document.getElementById("edit").textContent=S.edit?t('editDone'):t('edit');
   document.getElementById("edit").className="t"+(S.edit?" on":"");
-  document.getElementById("hint").textContent=S.edit?"Tast tallene fra din plade ind. Lad felterne være tomme, hvor der ikke står noget.":"Tryk på et tal for at markere det. Tryk igen for at fjerne.";
+  document.getElementById("hint").textContent=S.edit?t('hintEdit'):t('hintPlay');
+  document.getElementById("add").textContent=t('add');
+  document.getElementById("chk").textContent=t('check');
   // Antal forskellige numre der er markeret (råbt op)
   var marked={};
   S.plates.forEach(function(pl){pl.cells.forEach(function(v,i){if(v!==""&&pl.marks[i])marked[v]=1})});
@@ -147,8 +153,8 @@ function render(){
   S.plates.forEach(function(pl,pi){
     var d=document.createElement("div");d.className="plate";
     var h=document.createElement("div");h.className="ph";
-    h.innerHTML="<span>Plade "+(pi+1)+"</span>";
-    if(S.plates.length>1&&S.edit){var x=document.createElement("button");x.textContent="Slet";x.onclick=function(){if(x.dataset.s){S.plates.splice(pi,1);save();render()}else{x.dataset.s="1";x.textContent="Sikker?";setTimeout(function(){x.dataset.s="";x.textContent="Slet"},3000)}};h.appendChild(x)}
+    h.innerHTML="<span>"+t('plate')+" "+(pi+1)+"</span>";
+    if(S.plates.length>1&&S.edit){var x=document.createElement("button");x.textContent=t('del');x.onclick=function(){if(x.dataset.s){S.plates.splice(pi,1);save();render()}else{x.dataset.s="1";x.textContent=t('delConfirm');setTimeout(function(){x.dataset.s="";x.textContent=t('del')},3000)}};h.appendChild(x)}
     d.appendChild(h);
     var g=document.createElement("div");g.className="grid";
     pl.cells.forEach(function(v,i){
@@ -179,10 +185,10 @@ function render(){
     box.appendChild(d)});
 }
 document.getElementById("edit").onclick=function(){S.edit=!S.edit;save();render()};
-document.getElementById("add").onclick=function(){if(S.plates.length>=12){toast('Maks. 12 plader');return}S.plates.push(blank());S.edit=true;save();render()};
+document.getElementById("add").onclick=function(){if(S.plates.length>=12){toast(t('maxPlates'));return}S.plates.push(blank());S.edit=true;save();render()};
 var rb=document.getElementById("reset"),rt;
-function rbOff(){rb.dataset.s="";rb.textContent="Ryd markeringer";rb.classList.remove("on")}
-rb.onclick=function(){if(rb.dataset.s){clearTimeout(rt);rbOff();S.plates.forEach(function(p){p.marks=p.marks.map(function(){return false})});save();render()}else{rb.dataset.s="1";rb.textContent="Tryk igen for at rydde";rb.classList.add("on");rt=setTimeout(rbOff,3000)}};
+function rbOff(){rb.dataset.s="";rb.textContent=t('reset');rb.classList.remove("on")}
+rb.onclick=function(){if(rb.dataset.s){clearTimeout(rt);rbOff();S.plates.forEach(function(p){p.marks=p.marks.map(function(){return false})});save();render()}else{rb.dataset.s="1";rb.textContent=t('resetConfirm');rb.classList.add("on");rt=setTimeout(rbOff,3000)}};
 function check(){
  var locs={},iss=[];
  S.plates.forEach(function(pl,pi){
@@ -206,26 +212,26 @@ function check(){
 var ct;document.getElementById('chk').onclick=check;
 var lb=document.getElementById('lay'),L=false;
 try{L=localStorage.getItem('banko-lay')==='1'}catch(e){}
-function setL(){document.body.classList.toggle('l32',L);lb.textContent=L?'3 bredt':'2 bredt'}
+function setL(){document.body.classList.toggle('l32',L);lb.textContent=L?t('lay3'):t('lay2')}
 lb.onclick=function(){L=!L;try{localStorage.setItem('banko-lay',L?'1':'0')}catch(e){}setL()};
 setL();
-var TH=['auto','light','dark','blue','green','contrast'],TN={auto:'Auto',light:'Lys',dark:'Mørk',blue:'Blå',green:'Grøn',contrast:'Kontrast'},ti=0,tb=document.getElementById('thm');
+var TH=['auto','light','dark','blue','green','contrast'],ti=0,tb=document.getElementById('thm');
 try{var sv=localStorage.getItem('banko-theme');if(sv&&TH.indexOf(sv)>-1)ti=TH.indexOf(sv)}catch(e){}
-function setT(){var t=TH[ti];if(t==='auto')document.documentElement.removeAttribute('data-theme');else document.documentElement.setAttribute('data-theme',t);tb.textContent='🎨 '+TN[t]}
+function setT(){var th=TH[ti];if(th==='auto')document.documentElement.removeAttribute('data-theme');else document.documentElement.setAttribute('data-theme',th);tb.textContent='🎨 '+tTheme(th)}
 tb.onclick=function(){ti=(ti+1)%TH.length;try{localStorage.setItem('banko-theme',TH[ti])}catch(e){}setT()};
 setT();
 var VIB=true,vb=document.getElementById('vib');
 try{VIB=localStorage.getItem('banko-vib')!=='0'}catch(e){}
 function vibe(p){try{if(navigator.vibrate)navigator.vibrate(p)}catch(e){}}
 function buzz(pl,i){if(!VIB)return;var r=Math.floor(i/9),rowDone=true,all=true;for(var k=0;k<27;k++){if(pl.cells[k]!==''&&!pl.marks[k]){all=false;if(Math.floor(k/9)===r)rowDone=false}}if(all)vibe([300,120,300,120,300]);else if(rowDone)vibe(250)}
-function setV(){vb.textContent=VIB?'📳 Vibration til':'📳 Vibration fra'}
+function setV(){vb.textContent=VIB?t('vibOn'):t('vibOff')}
 vb.onclick=function(){VIB=!VIB;try{localStorage.setItem('banko-vib',VIB?'1':'0')}catch(e){}setV();if(VIB)vibe(60)};
 setV();
 var ht,gp=document.getElementById('grip'),barEl=document.querySelector('.bar'),tx=null;
 function isLand(){return window.matchMedia('(orientation:landscape)').matches}
 function hideBar(){if(S.edit||rb.dataset.s){sched();return}if(isLand())document.body.classList.add('hb');else if(document.fullscreenElement)document.body.classList.add('hp')}
 function showBar(){document.body.classList.remove('hb');document.body.classList.remove('hp');sched()}
-function sched(){clearTimeout(ht);ht=setTimeout(hideBar,3000)}
+function sched(){clearTimeout(ht);ht=setTimeout(hideBar,6000)}
 gp.onclick=showBar;document.getElementById('ptab').onclick=showBar;
 barEl.addEventListener('pointerdown',sched,true);
 window.addEventListener('resize',function(){var b=document.body.classList;b.remove('hb');if(!(document.fullscreenElement&&!isLand()&&!S.edit))b.remove('hp');sched()});
@@ -244,6 +250,146 @@ var LANGS=[
 {c:'bs-BA',n:'Bosanski',ig:['i','broj','brojevi'],U:['jedan jedna jedno','dva dvije','tri','četiri cetiri','pet','šest sest','sedam','osam','devet'],X:['deset','jedanaest','dvanaest','trinaest','četrnaest cetrnaest','petnaest','šesnaest sesnaest','sedamnaest','osamnaest','devetnaest'],T:['dvadeset','trideset','četrdeset cetrdeset','pedeset','šezdeset sezdeset','sedamdeset','osamdeset','devedeset']},
 {c:'ru-RU',n:'Русский',ig:['и','номер','номера'],U:['один одна одно','два две','три','четыре','пять','шесть','семь','восемь','девять'],X:['десять','одиннадцать','двенадцать','тринадцать','четырнадцать','пятнадцать','шестнадцать','семнадцать','восемнадцать','девятнадцать'],T:['двадцать','тридцать','сорок','пятьдесят','шестьдесят','семьдесят','восемьдесят','девяносто']}
 ];
+// UI-oversættelser (samme rækkefølge som LANGS)
+var UI=[
+{ // da
+  edit:"Rediger tal", editDone:"✓ Færdig med at taste",
+  hintEdit:"Tast tallene fra din plade ind. Lad felterne være tomme, hvor der ikke står noget.",
+  hintPlay:"Tryk på et tal for at markere det. Tryk igen for at fjerne.",
+  add:"+ Plade", check:"Tjek tal",
+  lay2:"2 bredt", lay3:"3 bredt",
+  theme:{auto:"Auto",light:"Lys",dark:"Mørk",blue:"Blå",green:"Grøn",contrast:"Kontrast"},
+  vibOn:"📳 Vibration til", vibOff:"📳 Vibration fra",
+  micOn:"🎤 Lyt: til", micOff:"🎤 Lyt: fra",
+  reset:"Ryd markeringer", resetConfirm:"Tryk igen for at rydde",
+  plate:"Plade", del:"Slet", delConfirm:"Sikker?",
+  maxPlates:"Maks. 12 plader",
+  listening:"🎤 Lytter – råb numrene op",
+  micBlocked:"Mikrofon er blokeret – åbn siden direkte i Chrome og tillad mikrofon",
+  noSpeech:"Din browser kan ikke lytte efter tale",
+  listenOff:"Lytning slukket"
+},
+{ // no
+  edit:"Rediger tall", editDone:"✓ Ferdig med å taste",
+  hintEdit:"Skriv tallene fra platen din. La feltene være tomme der det ikke står noe.",
+  hintPlay:"Trykk på et tall for å markere det. Trykk igjen for å fjerne.",
+  add:"+ Plate", check:"Sjekk tall",
+  lay2:"2 bredt", lay3:"3 bredt",
+  theme:{auto:"Auto",light:"Lys",dark:"Mørk",blue:"Blå",green:"Grønn",contrast:"Kontrast"},
+  vibOn:"📳 Vibrasjon på", vibOff:"📳 Vibrasjon av",
+  micOn:"🎤 Lytt: på", micOff:"🎤 Lytt: av",
+  reset:"Nullstill markeringer", resetConfirm:"Trykk igjen for å nullstille",
+  plate:"Plate", del:"Slett", delConfirm:"Sikker?",
+  maxPlates:"Maks. 12 plater",
+  listening:"🎤 Lytter – rop tallene",
+  micBlocked:"Mikrofon er blokkert – åpne siden i Chrome og tillat mikrofon",
+  noSpeech:"Nettleseren din kan ikke lytte etter tale",
+  listenOff:"Lytting av"
+},
+{ // sv
+  edit:"Redigera tal", editDone:"✓ Klar med inmatning",
+  hintEdit:"Skriv in siffrorna från din bricka. Lämna fälten tomma där det inte står något.",
+  hintPlay:"Tryck på ett tal för att markera det. Tryck igen för att ta bort.",
+  add:"+ Bricka", check:"Kontrollera tal",
+  lay2:"2 bred", lay3:"3 bred",
+  theme:{auto:"Auto",light:"Ljus",dark:"Mörk",blue:"Blå",green:"Grön",contrast:"Kontrast"},
+  vibOn:"📳 Vibration på", vibOff:"📳 Vibration av",
+  micOn:"🎤 Lyssna: på", micOff:"🎤 Lyssna: av",
+  reset:"Rensa markeringar", resetConfirm:"Tryck igen för att rensa",
+  plate:"Bricka", del:"Ta bort", delConfirm:"Säker?",
+  maxPlates:"Max 12 brickor",
+  listening:"🎤 Lyssnar – ropa upp siffrorna",
+  micBlocked:"Mikrofonen är blockerad – öppna sidan i Chrome och tillåt mikrofon",
+  noSpeech:"Din webbläsare kan inte lyssna efter tal",
+  listenOff:"Lyssning av"
+},
+{ // fi
+  edit:"Muokkaa numeroita", editDone:"✓ Valmis",
+  hintEdit:"Kirjoita numerot lautaseltasi. Jätä tyhjät kohdat tyhjiksi.",
+  hintPlay:"Paina numeroa merkitäksesi sen. Paina uudelleen poistaaksesi.",
+  add:"+ Lautanen", check:"Tarkista numerot",
+  lay2:"2 leveä", lay3:"3 leveä",
+  theme:{auto:"Auto",light:"Vaalea",dark:"Tumma",blue:"Sininen",green:"Vihreä",contrast:"Kontrasti"},
+  vibOn:"📳 Värinä päällä", vibOff:"📳 Värinä pois",
+  micOn:"🎤 Kuuntele: päällä", micOff:"🎤 Kuuntele: pois",
+  reset:"Tyhjennä merkinnät", resetConfirm:"Paina uudelleen tyhjentääksesi",
+  plate:"Lautanen", del:"Poista", delConfirm:"Varma?",
+  maxPlates:"Enintään 12 lautasta",
+  listening:"🎤 Kuuntelee – huuda numerot",
+  micBlocked:"Mikrofoni estetty – avaa sivu Chromessa ja salli mikrofoni",
+  noSpeech:"Selaimesi ei voi kuunnella puhetta",
+  listenOff:"Kuuntelu pois"
+},
+{ // de
+  edit:"Zahlen bearbeiten", editDone:"✓ Fertig",
+  hintEdit:"Gib die Zahlen deiner Karte ein. Lass Felder leer, wo nichts steht.",
+  hintPlay:"Tippe auf eine Zahl zum Markieren. Nochmal tippen zum Entfernen.",
+  add:"+ Karte", check:"Zahlen prüfen",
+  lay2:"2 breit", lay3:"3 breit",
+  theme:{auto:"Auto",light:"Hell",dark:"Dunkel",blue:"Blau",green:"Grün",contrast:"Kontrast"},
+  vibOn:"📳 Vibration an", vibOff:"📳 Vibration aus",
+  micOn:"🎤 Hören: an", micOff:"🎤 Hören: aus",
+  reset:"Markierungen löschen", resetConfirm:"Nochmal tippen zum Löschen",
+  plate:"Karte", del:"Löschen", delConfirm:"Sicher?",
+  maxPlates:"Max. 12 Karten",
+  listening:"🎤 Hört zu – ruf die Zahlen",
+  micBlocked:"Mikrofon blockiert – Seite in Chrome öffnen und Mikrofon erlauben",
+  noSpeech:"Dein Browser kann keine Sprache erkennen",
+  listenOff:"Zuhören aus"
+},
+{ // en
+  edit:"Edit numbers", editDone:"✓ Done editing",
+  hintEdit:"Type the numbers from your card. Leave empty fields blank.",
+  hintPlay:"Tap a number to mark it. Tap again to unmark.",
+  add:"+ Card", check:"Check numbers",
+  lay2:"2 wide", lay3:"3 wide",
+  theme:{auto:"Auto",light:"Light",dark:"Dark",blue:"Blue",green:"Green",contrast:"Contrast"},
+  vibOn:"📳 Vibration on", vibOff:"📳 Vibration off",
+  micOn:"🎤 Listen: on", micOff:"🎤 Listen: off",
+  reset:"Clear marks", resetConfirm:"Tap again to clear",
+  plate:"Card", del:"Delete", delConfirm:"Sure?",
+  maxPlates:"Max 12 cards",
+  listening:"🎤 Listening – call the numbers",
+  micBlocked:"Microphone blocked – open the page in Chrome and allow mic",
+  noSpeech:"Your browser cannot listen for speech",
+  listenOff:"Listening off"
+},
+{ // bs
+  edit:"Uredi brojeve", editDone:"✓ Gotovo",
+  hintEdit:"Unesite brojeve sa vaše ploče. Ostavite prazna polja prazna.",
+  hintPlay:"Dodirnite broj da ga označite. Ponovo dodirnite da uklonite.",
+  add:"+ Ploča", check:"Provjeri brojeve",
+  lay2:"2 široko", lay3:"3 široko",
+  theme:{auto:"Auto",light:"Svijetlo",dark:"Tamno",blue:"Plavo",green:"Zeleno",contrast:"Kontrast"},
+  vibOn:"📳 Vibracija uključena", vibOff:"📳 Vibracija isključena",
+  micOn:"🎤 Slušaj: uključeno", micOff:"🎤 Slušaj: isključeno",
+  reset:"Obriši oznake", resetConfirm:"Dodirnite ponovo da obrišete",
+  plate:"Ploča", del:"Obriši", delConfirm:"Sigurno?",
+  maxPlates:"Maks. 12 ploča",
+  listening:"🎤 Slušam – izgovorite brojeve",
+  micBlocked:"Mikrofon je blokiran – otvorite stranicu u Chromeu i dozvolite mikrofon",
+  noSpeech:"Vaš preglednik ne može slušati govor",
+  listenOff:"Slušanje isključeno"
+},
+{ // ru
+  edit:"Редактировать", editDone:"✓ Готово",
+  hintEdit:"Введите числа с вашей карточки. Оставьте пустые поля пустыми.",
+  hintPlay:"Нажмите на число, чтобы отметить. Нажмите ещё раз, чтобы снять.",
+  add:"+ Карточка", check:"Проверить числа",
+  lay2:"2 в ряд", lay3:"3 в ряд",
+  theme:{auto:"Авто",light:"Светлая",dark:"Тёмная",blue:"Синяя",green:"Зелёная",contrast:"Контраст"},
+  vibOn:"📳 Вибрация вкл", vibOff:"📳 Вибрация выкл",
+  micOn:"🎤 Слушать: вкл", micOff:"🎤 Слушать: выкл",
+  reset:"Очистить отметки", resetConfirm:"Нажмите ещё раз для очистки",
+  plate:"Карточка", del:"Удалить", delConfirm:"Точно?",
+  maxPlates:"Макс. 12 карточек",
+  listening:"🎤 Слушаю – называйте числа",
+  micBlocked:"Микрофон заблокирован – откройте страницу в Chrome и разрешите микрофон",
+  noSpeech:"Ваш браузер не может распознавать речь",
+  listenOff:"Прослушивание выкл"
+}
+];
+
 function build(L){L.m={};
  L.U.forEach(function(s,i){s.split(' ').forEach(function(w){L.m[w]=[i+1,'u']})});
  L.X.forEach(function(s,i){s.split(' ').forEach(function(w){L.m[w]=[i+10,'x']})});
@@ -276,7 +422,6 @@ function merge(it){var res=[];for(var i=0;i<it.length;i++){var a=it[i],b=it[i+1]
  if(b&&((a.k==='u'&&b.k==='t')||(a.k==='t'&&b.k==='u'))){res.push(a.v+b.v);i++}
  else res.push(a.v)}
  return res.filter(function(n){return n>=1&&n<=90})}
-var LI=0;
 function parseNums(t){return merge(items(t,LANGS[LI]))}
 function strictNums(t){return parseNums(t)}
 var made=[];
@@ -327,22 +472,26 @@ function handleSpoken(ns,isFinal){
 }
 var pend='',it,rdelay=300,waitNet=false;
 function wake(on){try{if(on&&navigator.wakeLock){navigator.wakeLock.request('screen').then(function(l){wl=l}).catch(function(){})}else if(!on&&wl){wl.release();wl=null}}catch(e){}}
-function setM(){mb.textContent=LS?'🎤 Lyt: til':'🎤 Lyt: fra';mb.classList.toggle('on',LS)}
+function setM(){mb.textContent=LS?t('micOn'):t('micOff');mb.classList.toggle('on',LS)}
 function stopListen(m){LS=false;clearPendDigit(true);try{if(rec)rec.stop()}catch(e){}wake(false);setM();if(m)toast(m)}
 function setPhrases(){try{if(typeof SpeechRecognitionPhrase!=='undefined'&&rec&&('phrases' in rec)){var ph=[];Object.keys(LANGS[LI].m).forEach(function(w){ph.push(new SpeechRecognitionPhrase(w,4.0))});rec.phrases=ph}}catch(e){}}
-function startListen(){if(!SR){toast('Din browser kan ikke lytte efter tale');return}
+function startListen(){if(!SR){toast(t('noSpeech'));return}
  rec=new SR();rec.lang=LANGS[LI].c;setPhrases();rec.continuous=true;rec.interimResults=true;rec.maxAlternatives=5;
- rec.onresult=function(e){rdelay=300;for(var i=e.resultIndex;i<e.results.length;i++){var r=e.results[i];if(r.isFinal){clearTimeout(it);pend='';var ns=[];for(var a=0;a<r.length&&!ns.length;a++)ns=strictNums(r[a].transcript);handleSpoken(ns,true);if(!ns.length){var tx=r[0].transcript.trim();if(!tx)toast('🎤 Hørte lyd, men ingen ord');else if(tx.split(/\s+/).length<=3)toast('🎤 Hørte "'+tx+'" – ikke et tal')}}else{var txt=r[0].transcript;pend=txt;clearTimeout(it);(function(t){it=setTimeout(function(){var ns=strictNums(t);if(ns.length&&pend===t)handleSpoken(ns,false)},450)})(txt)}}};
- rec.onerror=function(e){if(e.error==='not-allowed'||e.error==='service-not-allowed')stopListen('Mikrofon er blokeret – åbn siden direkte i Chrome og tillad mikrofon');else if(e.error==='network'){rdelay=Math.min(Math.max(rdelay*2,1500),6000);toast('Talegenkendelsen mistede forbindelsen (network) – prøver igen')}else if(e.error!=='no-speech'&&e.error!=='aborted')toast('Fejl: '+e.error)};
+ rec.onresult=function(e){rdelay=300;for(var i=e.resultIndex;i<e.results.length;i++){var r=e.results[i];if(r.isFinal){clearTimeout(it);pend='';var ns=[];for(var a=0;a<r.length&&!ns.length;a++)ns=strictNums(r[a].transcript);handleSpoken(ns,true);if(!ns.length){var tx=r[0].transcript.trim();if(!tx)toast('🎤 …');else if(tx.split(/\s+/).length<=3)toast('🎤 "'+tx+'"')}}else{var txt=r[0].transcript;pend=txt;clearTimeout(it);(function(ttxt){it=setTimeout(function(){var ns=strictNums(ttxt);if(ns.length&&pend===ttxt)handleSpoken(ns,false)},450)})(txt)}}};
+ rec.onerror=function(e){if(e.error==='not-allowed'||e.error==='service-not-allowed')stopListen(t('micBlocked'));else if(e.error==='network'){rdelay=Math.min(Math.max(rdelay*2,1500),6000);toast('Network…')}else if(e.error!=='no-speech'&&e.error!=='aborted')toast('Error: '+e.error)};
  rec.onend=function(){if(pend){var p=pend;pend='';handleSpoken(strictNums(p),true)}clearPendDigit(true);if(LS)setTimeout(function(){if(LS){try{rec.start()}catch(x){}}},rdelay)};
- LS=true;setM();try{rec.start();wake(true);toast('🎤 Lytter – råb numrene op')}catch(x){stopListen('Kunne ikke starte mikrofonen')}}
-mb.onclick=function(){if(LS){clearPendDigit(true);stopListen('Lytning slukket')}else startListen()};
+ LS=true;setM();try{rec.start();wake(true);toast(t('listening'))}catch(x){stopListen(t('noSpeech'))}}
+mb.onclick=function(){if(LS){clearPendDigit(true);stopListen(t('listenOff'))}else startListen()};
 var gb=document.getElementById('lang');
-try{var sl=localStorage.getItem('banko-lang');if(sl!==null&&LANGS[+sl])LI=+sl}catch(e){}
+try{var sl=localStorage.getItem('banko-lang');if(sl!==null&&LANGS[+sl])LI=+sl;else LI=0}catch(e){LI=0}
 function setG(){gb.textContent='🌐 '+LANGS[LI].n}
-gb.onclick=function(){LI=(LI+1)%LANGS.length;try{localStorage.setItem('banko-lang',LI)}catch(e){}setG();toast('🌐 '+LANGS[LI].n);if(rec){rec.lang=LANGS[LI].c;setPhrases();if(LS){try{rec.abort()}catch(e){}}}};
-setG();
-setM();
+function refreshUI(){
+  setG();setM();setV();setT();setL();
+  rbOff();
+  render();
+}
+gb.onclick=function(){LI=(LI+1)%LANGS.length;try{localStorage.setItem('banko-lang',LI)}catch(e){}refreshUI();toast('🌐 '+LANGS[LI].n);if(rec){rec.lang=LANGS[LI].c;setPhrases();if(LS){try{rec.abort()}catch(e){}}}};
+refreshUI();
 var ce=document.getElementById('clk'),de=document.getElementById('dte');
 function tick(){var n=new Date();function z(x){return x<10?'0'+x:''+x}ce.textContent=z(n.getHours())+':'+z(n.getMinutes())+':'+z(n.getSeconds());de.textContent=n.toLocaleDateString('da-DK',{weekday:'short',day:'numeric',month:'short',year:'numeric'})}
 tick();setInterval(tick,1000);
