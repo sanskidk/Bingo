@@ -1,17 +1,17 @@
 <!DOCTYPE html>
 <html lang="da">
-<head>
-<meta charset="utf-8">
-<meta name="theme-color" content="#000000">
-<meta name="application-name" content="Banko">
-<meta name="mobile-web-app-capable" content="yes">
-<link rel="manifest" href="manifest.json">
-<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
-<link rel="apple-touch-icon" href="icon-192.png">
-<meta name="color-scheme" content="light dark">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Banko</title>
-<style>
+  <head>
+    <meta charset="utf-8">
+    <meta name="theme-color" content="#000000">
+    <meta name="application-name" content="Banko">
+    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <meta name="color-scheme" content="light dark">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Banko</title>
+    <style>
 :root{color-scheme:light dark;--bg:#faf6ee;--card:#fff;--ink:#222;--dim:#8a8578;--line:#d9d2c0;--mark:#d6336c;--markink:#fff;--empty:#efe9d8;--ok:#2b8a3e;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#17181c;--card:#23252b;--ink:#f1f1f1;--dim:#9a9aa3;--line:#3a3d46;--mark:#f06595;--markink:#1a1a1a;--empty:#1d1f24;--ok:#69db7c}}
@@ -103,29 +103,47 @@ body.hb{padding-left:max(22px,env(safe-area-inset-left))}
 body.hb #grip{width:18px;height:70px;font-size:14px}
 }
 </style>
-</head>
-<body>
-<h1>Min banko-plade</h1>
-<div class="bar">
-  <button class="t" id="edit"></button>
-  <button class="t" id="add">+ Plade</button>
-  <button class="t" id="chk">Tjek tal</button>
-  <button class="t" id="lay"></button>
-  <button class="t" id="thm"></button>
-  <button class="t" id="lang"></button>
-  <button class="t" id="vib"></button>
-  <button class="t" id="mic"></button>
-  <button class="t" id="fs" style="display:none">⛶</button>
-  <button class="t" id="reset">Ryd markeringer</button>
-</div>
-<p class="hint" id="hint"></p>
-<div id="check"></div>
-<div id="topline"><div id="clk"></div><div id="dte"></div><div id="brand"><span id="cnt">0</span>Club 90’ by ErKaTek<sup>®</sup></div></div>
-<div id="plates"></div>
-<button id="grip" aria-label="Vis knapper">›</button>
-<button id="ptab" aria-label="Vis knapper">▾</button>
-<div id="toast"></div>
-<script>
+  </head>
+  <body>
+    <h1>Min banko-plade</h1>
+    <div class="bar">
+      <button class="t" id="edit">
+      </button>
+      <button class="t" id="add">+ Plade</button>
+      <button class="t" id="chk">Tjek tal</button>
+      <button class="t" id="lay">
+      </button>
+      <button class="t" id="thm">
+      </button>
+      <button class="t" id="lang">
+      </button>
+      <button class="t" id="vib">
+      </button>
+      <button class="t" id="mic">
+      </button>
+      <button class="t" id="fs" style="display:none">⛶</button>
+      <button class="t" id="reset">Ryd markeringer</button>
+    </div>
+    <p class="hint" id="hint">
+    </p>
+    <div id="check">
+    </div>
+    <div id="topline">
+      <div id="clk">
+      </div>
+      <div id="dte">
+      </div>
+      <div id="brand">
+        <span id="cnt">0</span>Club 90’ by ErKaTek<sup>®</sup>
+      </div>
+    </div>
+    <div id="plates">
+    </div>
+    <button id="grip" aria-label="Vis knapper">›</button>
+    <button id="ptab" aria-label="Vis knapper">▾</button>
+    <div id="toast">
+    </div>
+    <script>
 var KEY="banko-v3";
 var LI=0;
 try{var sl0=localStorage.getItem('banko-lang');if(sl0!==null)LI=+sl0||0}catch(e){}
@@ -438,14 +456,43 @@ function merge(it){var res=[];for(var i=0;i<it.length;i++){var a=it[i],b=it[i+1]
  return res.filter(function(n){return n>=1&&n<=90})}
 function parseNums(t){return merge(items(t,LANGS[LI]))}
 function strictNums(t){return parseNums(t)}
-function markNum(n){var hits=[],s=String(n);S.plates.forEach(function(pl,pi){var found=false;for(var idx=0;idx<pl.cells.length;idx++){if(pl.cells[idx]===s){found=true;if(!pl.marks[idx]){pl.marks[idx]=true;buzz(pl,idx)}}}if(found)hits.push(pi+1)});return hits}
+function markNum(n){var hits=[],s=String(n),changed=false;S.plates.forEach(function(pl,pi){var found=false;for(var idx=0;idx<pl.cells.length;idx++){if(pl.cells[idx]===s){found=true;if(!pl.marks[idx]){pl.marks[idx]=true;changed=true;buzz(pl,idx)}}}if(found)hits.push(pi+1)});return {hits:hits,changed:changed}}
+// Hurtig visuel opdatering uden fuld render – kun de celler der ændres
+function paintMarks(){
+  var box=document.getElementById('plates');
+  if(!box)return;
+  var plates=box.querySelectorAll('.plate');
+  S.plates.forEach(function(pl,pi){
+    var plate=plates[pi];if(!plate)return;
+    var cells=plate.querySelectorAll('.grid .c');
+    pl.cells.forEach(function(v,i){
+      var el=cells[i];if(!el||el.tagName==='INPUT')return;
+      var on=v!==''&&pl.marks[i];
+      el.className='c'+(v===''?' e':(on?' m':''));
+    });
+    // Opdater række-tællere
+    var spans=plate.querySelectorAll('.rows span');
+    for(var r=0;r<3;r++){
+      var left=0,tot=0;
+      for(var c=0;c<9;c++){var k=r*9+c;if(pl.cells[k]!==''){tot++;if(!pl.marks[k])left++}}
+      if(spans[r]){if(tot>0&&left===0){spans[r].className='done';spans[r].textContent='✓'}else{spans[r].className='';spans[r].textContent=left}}
+    }
+  });
+  // Opdater tæller
+  var marked={};
+  S.plates.forEach(function(pl){pl.cells.forEach(function(v,i){if(v!==''&&pl.marks[i])marked[v]=1})});
+  var cntEl=document.getElementById('cnt');
+  if(cntEl)cntEl.textContent=Object.keys(marked).length;
+}
 function applyNums(ns){if(S.edit||!ns.length)return;
- // Tale må KUN markere – aldrig afmarkere et tidligere tal
- var msg=[];ns.forEach(function(n){var h=markNum(n);msg.push(h.length?n+' ✓':n+' (ikke på dine plader)')});
- save();render();toast('🎤 '+msg.join('   '))}
+ // Tale må KUN markere – aldrig afmarkere
+ var msg=[],any=false;
+ ns.forEach(function(n){var r=markNum(n);if(r.changed)any=true;msg.push(r.hits.length?n+' ✓':n+' (ikke på dine plader)')});
+ if(any){save();paintMarks()}
+ toast('🎤 '+msg.join('   '))}
 
-// Tidsbaseret kombination af enkeltcifre (fx "to" + "tre" → 23 hvis sagt inden for ca. 0,5-0,8 sek)
-var pendDigit=null; // {v, t, timer}
+// Tidsbaseret kombination af enkeltcifre
+var pendDigit=null;
 function clearPendDigit(commit){
   if(!pendDigit)return;
   clearTimeout(pendDigit.timer);
@@ -455,10 +502,9 @@ function clearPendDigit(commit){
 function handleSpoken(ns,isFinal){
   if(S.edit||!ns||!ns.length)return;
   var now=Date.now();
-  // Hvis det er et enkelt ciffer 1-9, overvej kombination med forrige
+  // Enkeltcifre: vent med at markere – de kan være starten på et tocifret tal (fx 2 → 21)
   if(ns.length===1 && ns[0]>=1 && ns[0]<=9){
     if(pendDigit && (now-pendDigit.t)<450 && pendDigit.v !== ns[0]){
-      // Kun kombiner hvis det er TO FORSKELLIGE cifre (undgår at "nummer 8" bliver til 88)
       var combined=pendDigit.v*10+ns[0];
       if(combined<=90){
         clearTimeout(pendDigit.timer);
@@ -467,30 +513,94 @@ function handleSpoken(ns,isFinal){
         return;
       }
     }
-    // Kortere ventetid = hurtigere markering af enkeltcifre
-    clearPendDigit(true);
+    // Gem cifferet, men marker det IKKE endnu ved interim
+    if(pendDigit){clearTimeout(pendDigit.timer)}
     pendDigit={v:ns[0],t:now,timer:setTimeout(function(){
       if(pendDigit){applyNums([pendDigit.v]);pendDigit=null}
-    },500)};
-    // Marker med det samme
-    applyNums(ns);
+    },600)};
+    // Kun marker med det samme hvis det er endeligt resultat
+    if(isFinal){clearTimeout(pendDigit.timer);pendDigit=null;applyNums(ns)}
     return;
   }
-  // Almindeligt nummer (10–90) – marker med det samme
-  clearPendDigit(true);
+  // Tocifret/fuldt nummer: smid evt. ventende enkeltciffer VÆK (ikke commit)
+  if(pendDigit){clearTimeout(pendDigit.timer);pendDigit=null}
   applyNums(ns);
 }
-var pend='',it,rdelay=300,waitNet=false;
+var pend='',it,rdelay=200,watchTimer=null,keepAlive=null,lastHeard=0;
 function wake(on){try{if(on&&navigator.wakeLock){navigator.wakeLock.request('screen').then(function(l){wl=l}).catch(function(){})}else if(!on&&wl){wl.release();wl=null}}catch(e){}}
 function setM(){mb.textContent=LS?t('micOn'):t('micOff');mb.classList.toggle('on',LS)}
-function stopListen(m){LS=false;clearPendDigit(true);try{if(rec)rec.stop()}catch(e){}wake(false);setM();if(m)toast(m)}
+function armWatch(){
+  lastHeard=Date.now();
+  clearTimeout(watchTimer);
+  // Genstart hvis ingen tale i 6 sek – holder mikrofonen vågen
+  watchTimer=setTimeout(function(){if(LS)restartRec()},6000);
+}
+function restartRec(){
+  if(!LS||!SR)return;
+  try{if(rec){try{rec.onend=null;rec.onerror=null;rec.onresult=null;rec.abort()}catch(e){try{rec.stop()}catch(e2){}}}}catch(e){}
+  rec=null;
+  setTimeout(function(){
+    if(!LS)return;
+    try{
+      rec=new SR();
+      rec.lang=LANGS[LI].c;
+      setPhrases();
+      rec.continuous=true;
+      rec.interimResults=true;
+      rec.maxAlternatives=3;
+      rec.onresult=onRecResult;
+      rec.onerror=onRecError;
+      rec.onend=onRecEnd;
+      rec.start();
+      armWatch();
+    }catch(x){setTimeout(function(){if(LS)restartRec()},600)}
+  },150);
+}
+function onRecResult(e){
+  rdelay=200;armWatch();
+  for(var i=e.resultIndex;i<e.results.length;i++){
+    var r=e.results[i];
+    if(r.isFinal){
+      clearTimeout(it);pend='';
+      var ns=[];
+      for(var a=0;a<r.length&&!ns.length;a++)ns=strictNums(r[a].transcript);
+      handleSpoken(ns,true);
+    }else{
+      var txt=r[0].transcript;pend=txt;clearTimeout(it);
+      var nsQuick=strictNums(txt);
+      if(nsQuick.length&&nsQuick.every(function(n){return n>=10})){
+        handleSpoken(nsQuick,false);
+      }else{
+        (function(ttxt){it=setTimeout(function(){var ns=strictNums(ttxt);if(ns.length&&pend===ttxt)handleSpoken(ns,false)},80)})(txt);
+      }
+    }
+  }
+}
+function onRecError(e){
+  if(e.error==='not-allowed'||e.error==='service-not-allowed'){stopListen(t('micBlocked'));return}
+  if(e.error==='network'){rdelay=Math.min(Math.max(rdelay*2,800),3000)}
+  // Ved alle andre fejl (no-speech, aborted …) genstartes via onend
+}
+function onRecEnd(){
+  if(pend){var p=pend;pend='';handleSpoken(strictNums(p),true)}
+  clearPendDigit(true);
+  // Altid fuld genstart – rec.start() på gammel instans fejler ofte efter pause
+  if(LS)setTimeout(function(){if(LS)restartRec()},rdelay);
+}
+function stopListen(m){
+  LS=false;clearPendDigit(true);clearTimeout(watchTimer);clearInterval(keepAlive);
+  try{if(rec){rec.onend=null;rec.onerror=null;rec.abort()}}catch(e){}
+  rec=null;wake(false);setM();if(m)toast(m);
+}
 function setPhrases(){try{if(typeof SpeechRecognitionPhrase!=='undefined'&&rec&&('phrases' in rec)){var ph=[];Object.keys(LANGS[LI].m).forEach(function(w){ph.push(new SpeechRecognitionPhrase(w,4.0))});rec.phrases=ph}}catch(e){}}
 function startListen(){if(!SR){toast(t('noSpeech'));return}
- rec=new SR();rec.lang=LANGS[LI].c;setPhrases();rec.continuous=true;rec.interimResults=true;rec.maxAlternatives=5;
- rec.onresult=function(e){rdelay=300;for(var i=e.resultIndex;i<e.results.length;i++){var r=e.results[i];if(r.isFinal){clearTimeout(it);pend='';var ns=[];for(var a=0;a<r.length&&!ns.length;a++)ns=strictNums(r[a].transcript);handleSpoken(ns,true);if(!ns.length){var tx=r[0].transcript.trim();if(!tx)toast('🎤 …');else if(tx.split(/\s+/).length<=3)toast('🎤 "'+tx+'"')}}else{var txt=r[0].transcript;pend=txt;clearTimeout(it);var nsQuick=strictNums(txt);if(nsQuick.length&&nsQuick.every(function(n){return n>=10})){handleSpoken(nsQuick,false)}else{(function(ttxt){it=setTimeout(function(){var ns=strictNums(ttxt);if(ns.length&&pend===ttxt)handleSpoken(ns,false)},120)})(txt)}}}};
- rec.onerror=function(e){if(e.error==='not-allowed'||e.error==='service-not-allowed')stopListen(t('micBlocked'));else if(e.error==='network'){rdelay=Math.min(Math.max(rdelay*2,1500),6000);toast('Network…')}else if(e.error!=='no-speech'&&e.error!=='aborted')toast('Error: '+e.error)};
- rec.onend=function(){if(pend){var p=pend;pend='';handleSpoken(strictNums(p),true)}clearPendDigit(true);if(LS)setTimeout(function(){if(LS){try{rec.start()}catch(x){}}},rdelay)};
- LS=true;setM();try{rec.start();wake(true);toast(t('listening'))}catch(x){stopListen(t('noSpeech'))}}
+ LS=true;setM();wake(true);toast(t('listening'));restartRec();
+ // Ekstra sikkerhed: tjek hvert 8. sek at lytningen stadig kører
+ clearInterval(keepAlive);
+ keepAlive=setInterval(function(){
+   if(!LS)return;
+   if(Date.now()-lastHeard>8000)restartRec();
+ },8000)}
 mb.onclick=function(){if(LS){clearPendDigit(true);stopListen(t('listenOff'))}else startListen()};
 var gb=document.getElementById('lang');
 try{var sl=localStorage.getItem('banko-lang');if(sl!==null&&LANGS[+sl])LI=+sl;else LI=0}catch(e){LI=0}
@@ -528,5 +638,5 @@ tick();setInterval(tick,1000);
 render();
 if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})}
 </script>
-</body>
+  </body>
 </html>
