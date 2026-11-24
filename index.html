@@ -50,7 +50,7 @@ input.c{text-align:center;font-family:inherit}
 #toast{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:20px;padding:8px 16px;font-size:16px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s;z-index:30;max-width:90vw;text-align:center}
 #toast.on{opacity:1}
 #mic.on{background:var(--mark);color:var(--markink);border-color:var(--mark)}
-#cnt{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:28px;padding:0 6px;margin-right:8px;border-radius:6px;background:var(--mark);color:var(--markink);font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1;vertical-align:middle}
+#cnt{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:28px;padding:0 8px;margin-right:8px;border-radius:6px;background:var(--mark);color:var(--markink);font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1;vertical-align:middle;white-space:nowrap}
 #ptab{display:none;position:fixed;top:env(safe-area-inset-top,0px);left:50%;transform:translateX(-50%);width:90px;height:26px;border:none;border-radius:0 0 14px 14px;background:var(--mark);color:var(--markink);opacity:.45;font-size:16px;padding:0;z-index:20}
 @media (orientation:portrait){body.hp h1,body.hp .hint,body.hp .bar{display:none}body.hp #ptab{display:block}body.hp .c{font-size:clamp(10px,3.6vw,18px)}
 body{min-height:100vh;min-height:100dvh;box-sizing:border-box;display:flex;flex-direction:column}
@@ -83,7 +83,7 @@ body{display:grid;grid-template-columns:max-content 1fr;grid-template-rows:auto 
 #plates{grid-column:2;grid-row:3}
 #topline{grid-column:2;grid-row:2;grid-template-columns:1fr auto 1fr;align-items:center;margin-bottom:3px}
 #brand{grid-column:2;grid-row:1;margin:0;font-size:20px;line-height:34px;height:34px;white-space:nowrap;display:flex;align-items:center;justify-content:center}
-#brand #cnt{height:24px;min-width:24px;font-size:13px;margin-right:6px}
+#brand #cnt{height:24px;min-width:24px;font-size:12px;margin-right:6px;padding:0 6px}
 button.t{padding:6px 10px;font-size:13px;white-space:nowrap}
 #plates{gap:6px}
 body.l32 #plates{grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,auto);grid-auto-flow:row}
@@ -136,6 +136,22 @@ var S={plates:D.map(mk),edit:false};
 try{var r=localStorage.getItem(KEY);if(r){var p=JSON.parse(r);if(p&&p.plates&&p.plates.length)S=p}}catch(e){}
 if(S.plates.length>12)S.plates.length=12;
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+var lastCalled=0;
+try{var lc=localStorage.getItem('banko-last');if(lc)lastCalled=+lc||0}catch(e){}
+function updateCnt(){
+  var marked={};
+  S.plates.forEach(function(pl){pl.cells.forEach(function(v,i){if(v!==""&&pl.marks[i])marked[v]=1})});
+  var n=Object.keys(marked).length;
+  var cntEl=document.getElementById("cnt");
+  if(!cntEl)return;
+  // Vis "antal-sidste" fx 12-30, eller bare antal hvis intet sidste
+  if(n>0&&lastCalled>0)cntEl.textContent=n+'-'+lastCalled;
+  else cntEl.textContent=String(n);
+}
+function setLastCalled(num){
+  lastCalled=+num||0;
+  try{localStorage.setItem('banko-last',lastCalled)}catch(e){}
+}
 function t(key){try{return (UI[LI]&&UI[LI][key])||UI[0][key]||key}catch(e){return key}}
 function tTheme(k){try{return (UI[LI]&&UI[LI].theme&&UI[LI].theme[k])||UI[0].theme[k]||k}catch(e){return k}}
 function render(){
@@ -144,11 +160,7 @@ function render(){
   document.getElementById("hint").textContent=S.edit?t('hintEdit'):t('hintPlay');
   document.getElementById("add").textContent=t('add');
   document.getElementById("chk").textContent=t('check');
-  // Antal forskellige numre der er markeret (råbt op)
-  var marked={};
-  S.plates.forEach(function(pl){pl.cells.forEach(function(v,i){if(v!==""&&pl.marks[i])marked[v]=1})});
-  var cntEl=document.getElementById("cnt");
-  if(cntEl)cntEl.textContent=Object.keys(marked).length;
+  updateCnt();
   var box=document.getElementById("plates");box.innerHTML="";document.getElementById('add').disabled=S.plates.length>=12;box.style.setProperty('--r',Math.max(3,Math.ceil(S.plates.length/2)));box.style.setProperty('--r3',Math.max(2,Math.ceil(S.plates.length/3)));
   S.plates.forEach(function(pl,pi){
     var d=document.createElement("div");d.className="plate";
@@ -170,8 +182,8 @@ function render(){
               if(p.cells[j]===v) p.marks[j]=!wasOn;
             }
           });
+          if(!wasOn){setLastCalled(v);buzz(pl,i)}
           save();
-          if(!wasOn) buzz(pl,i);
           render();
         };else el.disabled=true}
       g.appendChild(el)});
@@ -188,7 +200,7 @@ document.getElementById("edit").onclick=function(){S.edit=!S.edit;save();render(
 document.getElementById("add").onclick=function(){if(S.plates.length>=12){toast(t('maxPlates'));return}S.plates.push(blank());S.edit=true;save();render()};
 var rb=document.getElementById("reset"),rt;
 function rbOff(){rb.dataset.s="";rb.textContent=t('reset');rb.classList.remove("on")}
-rb.onclick=function(){if(rb.dataset.s){clearTimeout(rt);rbOff();S.plates.forEach(function(p){p.marks=p.marks.map(function(){return false})});save();render()}else{rb.dataset.s="1";rb.textContent=t('resetConfirm');rb.classList.add("on");rt=setTimeout(rbOff,3000)}};
+rb.onclick=function(){if(rb.dataset.s){clearTimeout(rt);rbOff();S.plates.forEach(function(p){p.marks=p.marks.map(function(){return false})});setLastCalled(0);save();render()}else{rb.dataset.s="1";rb.textContent=t('resetConfirm');rb.classList.add("on");rt=setTimeout(rbOff,3000)}};
 function check(){
  var locs={},iss=[];
  S.plates.forEach(function(pl,pi){
@@ -460,17 +472,20 @@ function paintMarks(){
       if(spans[r]){if(tot>0&&left===0){spans[r].className='done';spans[r].textContent='✓'}else{spans[r].className='';spans[r].textContent=left}}
     }
   });
-  // Opdater tæller
-  var marked={};
-  S.plates.forEach(function(pl){pl.cells.forEach(function(v,i){if(v!==''&&pl.marks[i])marked[v]=1})});
-  var cntEl=document.getElementById('cnt');
-  if(cntEl)cntEl.textContent=Object.keys(marked).length;
+  updateCnt();
 }
 function applyNums(ns){if(S.edit||!ns.length)return;
  // Tale må KUN markere – aldrig afmarkere
  var msg=[],any=false;
- ns.forEach(function(n){var r=markNum(n);if(r.changed)any=true;msg.push(r.hits.length?n+' ✓':n+' (ikke på dine plader)')});
- if(any){save();paintMarks()}
+ ns.forEach(function(n){
+   var r=markNum(n);
+   if(r.changed)any=true;
+   // Sidste råbte nummer – også hvis det ikke er på pladen
+   setLastCalled(n);
+   msg.push(r.hits.length?n+' ✓':n+' (ikke på dine plader)');
+ });
+ if(any)save();
+ paintMarks(); // opdaterer også tæller + sidste nr
  toast('🎤 '+msg.join('   '))}
 
 // Tidsbaseret kombination af enkeltcifre
@@ -516,7 +531,6 @@ function setM(){mb.textContent=LS?t('micOn'):t('micOff');mb.classList.toggle('on
 function armWatch(){
   lastHeard=Date.now();
   clearTimeout(watchTimer);
-  // iOS: genstart oftere. Andre: kun nød-genstart.
   var ms=isIOS?6000:12000;
   watchTimer=setTimeout(function(){if(LS&&!restarting)restartRec()},ms);
 }
@@ -531,9 +545,8 @@ function restartRec(){
       rec=new SR();
       rec.lang=LANGS[LI].c;
       setPhrases();
-      // iOS: ikke-continuous = mere stabilt. Android: continuous.
       rec.continuous=!isIOS;
-      rec.interimResults=!isIOS; // iOS: kun final resultater
+      rec.interimResults=!isIOS;
       rec.maxAlternatives=isIOS?1:3;
       rec.onresult=onRecResult;
       rec.onerror=onRecError;
@@ -574,6 +587,7 @@ function onRecError(e){
 function onRecEnd(){
   if(pend){var p=pend;pend='';handleSpoken(strictNums(p),true)}
   clearPendDigit(true);
+  // Genstart med det samme når enheden lukker sessionen
   if(LS&&!restarting)setTimeout(function(){if(LS)restartRec()},rdelay);
 }
 function stopListen(m){
