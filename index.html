@@ -91,6 +91,9 @@ body.l32 #plates{grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2
 .ph{margin-bottom:2px;font-size:11px}
 .c{box-sizing:border-box;aspect-ratio:auto;height:calc((100vh - 186px)/9);height:calc((100dvh - 186px)/9);font-size:clamp(10px,min(2.4vw,3.8vh),20px)}
 body.l32 .c{height:calc((100vh - 141px)/6);height:calc((100dvh - 141px)/6);font-size:clamp(11px,min(2.2vw,4.2vh),20px)}
+/* Kun 12 plader + vandret: tal et hak mindre */
+body.p12 .c{font-size:clamp(9px,min(2.0vw,3.2vh),16px)}
+body.p12.l32 .c{font-size:clamp(9px,min(1.9vw,3.4vh),16px)}
 .rows{margin-top:2px;font-size:11px}
 .rows span{padding:1px 0}
 body{height:100vh;height:100dvh;box-sizing:border-box;grid-template-rows:auto auto 1fr}
@@ -155,12 +158,13 @@ function setLastCalled(num){
 function t(key){try{return (UI[LI]&&UI[LI][key])||UI[0][key]||key}catch(e){return key}}
 function tTheme(k){try{return (UI[LI]&&UI[LI].theme&&UI[LI].theme[k])||UI[0].theme[k]||k}catch(e){return k}}
 function render(){
-  document.getElementById("edit").textContent=S.edit?t('editDone'):t('edit');
+  document.getElementById("edit").textContent=t('edit');
   document.getElementById("edit").className="t"+(S.edit?" on":"");
   document.getElementById("hint").textContent=S.edit?t('hintEdit'):t('hintPlay');
   document.getElementById("add").textContent=t('add');
   document.getElementById("chk").textContent=t('check');
   updateCnt();
+  document.body.classList.toggle('p12',S.plates.length>=12);
   var box=document.getElementById("plates");box.innerHTML="";document.getElementById('add').disabled=S.plates.length>=12;box.style.setProperty('--r',Math.max(3,Math.ceil(S.plates.length/2)));box.style.setProperty('--r3',Math.max(2,Math.ceil(S.plates.length/3)));
   S.plates.forEach(function(pl,pi){
     var d=document.createElement("div");d.className="plate";
