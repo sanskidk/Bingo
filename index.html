@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="da">
+<html lang="da" translate="no">
 <head>
 <meta charset="utf-8">
 <meta name="theme-color" content="#000000">
@@ -10,10 +10,16 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="color-scheme" content="light dark">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="google" content="notranslate">
 <title>Banko</title>
 <style>
 :root{color-scheme:light dark;--bg:#faf6ee;--card:#fff;--ink:#222;--dim:#8a8578;--line:#d9d2c0;--mark:#d6336c;--markink:#fff;--empty:#efe9d8;--ok:#2b8a3e;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+/* Undgå Chrome/Google tekstvalg og oversættelsesbjælke ved tryk */
+html,body,#plates,.plate,.ph,.c,.rows,#brand,#topline,#cnt,button{
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent
+}
+input,textarea{-webkit-user-select:text;user-select:text}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#17181c;--card:#23252b;--ink:#f1f1f1;--dim:#9a9aa3;--line:#3a3d46;--mark:#f06595;--markink:#1a1a1a;--empty:#1d1f24;--ok:#69db7c}}
 :root[data-theme="dark"]{--bg:#17181c;--card:#23252b;--ink:#f1f1f1;--dim:#9a9aa3;--line:#3a3d46;--mark:#f06595;--markink:#1a1a1a;--empty:#1d1f24;--ok:#69db7c}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
