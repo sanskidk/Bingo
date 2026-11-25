@@ -527,6 +527,7 @@ function clearPendDigit(commit){
 function handleSpoken(ns,isFinal,rawTxt){
   if(S.edit||!ns||!ns.length)return;
   var now=Date.now();
+  var isDa=LANGS[LI]&&LANGS[LI].c==='da-DK';
   var explicit=hasNummerPrefix(rawTxt||'');
   // Flere tal på én gang
   if(ns.length>1){
@@ -534,9 +535,7 @@ function handleSpoken(ns,isFinal,rawTxt){
     applyNums(ns);
     return;
   }
-  // Enkeltcifre 1–9:
-  // - kun markér direkte hvis der siges "nummer 1/2/…"
-  // - ellers kun brug til at bygge tocifret (fx 2 + 3 → 23), ikke som tallet 2 alene
+  // Enkeltcifre 1–9
   if(ns.length===1 && ns[0]>=1 && ns[0]<=9){
     if(pendDigit && (now-pendDigit.t)<400 && pendDigit.v !== ns[0]){
       var combined=pendDigit.v*10+ns[0];
@@ -548,18 +547,15 @@ function handleSpoken(ns,isFinal,rawTxt){
       }
     }
     if(pendDigit){clearTimeout(pendDigit.timer)}
-    if(explicit){
-      // "nummer 8" → markér 8
-      pendDigit={v:ns[0],t:now,explicit:true,timer:setTimeout(function(){
-        if(pendDigit){applyNums([pendDigit.v]);pendDigit=null}
-      },300)};
-      if(isFinal){clearTimeout(pendDigit.timer);pendDigit=null;applyNums(ns)}
-    }else{
-      // Bare "otte"/"2" → vent på muligt tocifret, markér IKKE som enkeltciffer
-      pendDigit={v:ns[0],t:now,explicit:false,timer:setTimeout(function(){
-        pendDigit=null; // udløb uden markering
-      },800)};
+    // Dansk: kun markér enkeltciffer ved "nummer X". Andre sprog: normalt.
+    if(isDa&&!explicit){
+      pendDigit={v:ns[0],t:now,explicit:false,timer:setTimeout(function(){pendDigit=null},800)};
+      return;
     }
+    pendDigit={v:ns[0],t:now,explicit:true,timer:setTimeout(function(){
+      if(pendDigit){applyNums([pendDigit.v]);pendDigit=null}
+    },300)};
+    if(isFinal){clearTimeout(pendDigit.timer);pendDigit=null;applyNums(ns)}
     return;
   }
   // Tocifret: marker med det samme
