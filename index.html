@@ -532,11 +532,21 @@ function handleSpoken(ns,isFinal,rawTxt){
   // Flere tal på én gang
   if(ns.length>1){
     if(pendDigit){clearTimeout(pendDigit.timer);pendDigit=null}
+    // Dansk uden "nummer": drop enkeltcifre 1–9
+    if(isDa&&!explicit){
+      ns=ns.filter(function(n){return n>=10});
+      if(!ns.length)return;
+    }
     applyNums(ns);
     return;
   }
   // Enkeltcifre 1–9
   if(ns.length===1 && ns[0]>=1 && ns[0]<=9){
+    // Dansk uden "nummer": markér IKKE (heller ikke via hurtig kombination 1+3→13)
+    if(isDa&&!explicit){
+      if(pendDigit){clearTimeout(pendDigit.timer);pendDigit=null}
+      return;
+    }
     if(pendDigit && (now-pendDigit.t)<400 && pendDigit.v !== ns[0]){
       var combined=pendDigit.v*10+ns[0];
       if(combined<=90){
@@ -547,11 +557,6 @@ function handleSpoken(ns,isFinal,rawTxt){
       }
     }
     if(pendDigit){clearTimeout(pendDigit.timer)}
-    // Dansk: kun markér enkeltciffer ved "nummer X". Andre sprog: normalt.
-    if(isDa&&!explicit){
-      pendDigit={v:ns[0],t:now,explicit:false,timer:setTimeout(function(){pendDigit=null},800)};
-      return;
-    }
     pendDigit={v:ns[0],t:now,explicit:true,timer:setTimeout(function(){
       if(pendDigit){applyNums([pendDigit.v]);pendDigit=null}
     },300)};
