@@ -490,20 +490,22 @@ function paintMarks(){
   });
   updateCnt();
 }
-function applyNums(ns){if(S.edit||!ns.length)return;
- // Tale må KUN markere – aldrig afmarkere. Allerede markerede ignoreres.
- var msg=[],any=false;
+var recentSpoken={}; // n -> timestamp – undgå dobbeltbehandling af samme interim
+function applyNums(ns,quiet){if(S.edit||!ns.length)return;
+ var msg=[],any=false,now=Date.now();
  ns.forEach(function(n){
-   if(isFullyMarked(n))return; // allerede markeret → ignorér
+   if(isFullyMarked(n))return;
+   // Samme tal inden for 1,5 sek (typisk interim-gentagelse) → spring over
+   if(recentSpoken[n]&&(now-recentSpoken[n])<1500)return;
    var r=markNum(n);
-   if(r.changed)any=true;
+   if(r.changed){any=true;recentSpoken[n]=now}
    setLastCalled(n);
    msg.push(r.hits.length?n+' ✓':n+' (ikke på dine plader)');
  });
- if(!msg.length)return; // kun genråb af allerede markerede
- if(any)save();
- paintMarks();
- toast('🎤 '+msg.join('   '))}
+ if(!msg.length)return;
+ if(any){save();paintMarks()}
+ else paintMarks();
+ if(!quiet)toast('🎤 '+msg.join('   '))}
 
 // Tidsbaseret kombination af enkeltcifre
 var pendDigit=null;
@@ -516,33 +518,37 @@ function clearPendDigit(commit){
 function handleSpoken(ns,isFinal){
   if(S.edit||!ns||!ns.length)return;
   var now=Date.now();
-  // Enkeltcifre: vent med at markere – de kan være starten på et tocifret tal (fx 2 → 21)
+  // Flere tal på én gang → marker med det samme (stille = mindre lag)
+  if(ns.length>1){
+    if(pendDigit){clearTimeout(pendDigit.timer);pendDigit=null}
+    applyNums(ns,true);
+    return;
+  }
+  // Enkeltcifre: kort pause (råb ~0,5–1 sek, ~1 sek mellem tal)
   if(ns.length===1 && ns[0]>=1 && ns[0]<=9){
-    if(pendDigit && (now-pendDigit.t)<450 && pendDigit.v !== ns[0]){
+    if(pendDigit && (now-pendDigit.t)<350 && pendDigit.v !== ns[0]){
       var combined=pendDigit.v*10+ns[0];
       if(combined<=90){
         clearTimeout(pendDigit.timer);
         pendDigit=null;
-        applyNums([combined]);
+        applyNums([combined],true);
         return;
       }
     }
-    // Gem cifferet, men marker det IKKE endnu ved interim
     if(pendDigit){clearTimeout(pendDigit.timer)}
     pendDigit={v:ns[0],t:now,timer:setTimeout(function(){
-      if(pendDigit){applyNums([pendDigit.v]);pendDigit=null}
-    },600)};
-    // Kun marker med det samme hvis det er endeligt resultat
-    if(isFinal){clearTimeout(pendDigit.timer);pendDigit=null;applyNums(ns)}
+      if(pendDigit){applyNums([pendDigit.v],true);pendDigit=null}
+    },350)};
+    if(isFinal){clearTimeout(pendDigit.timer);pendDigit=null;applyNums(ns,true)}
     return;
   }
-  // Tocifret/fuldt nummer: smid evt. ventende enkeltciffer VÆK (ikke commit)
+  // Tocifret: marker med det samme allerede ved interim
   if(pendDigit){clearTimeout(pendDigit.timer);pendDigit=null}
-  applyNums(ns);
+  applyNums(ns,true);
 }
-// iOS/iPadOS: korte sessioner (continuous virker dårligt). Android/desktop: continuous.
+// iOS/iPadOS: korte sessioner. Android/desktop: continuous.
 var isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
-var pend='',it,rdelay=isIOS?120:80,watchTimer=null,keepAlive=null,lastHeard=0,restarting=false;
+var pend='',it,rdelay=isIOS?100:50,watchTimer=null,keepAlive=null,lastHeard=0,restarting=false;
 function wake(on){try{if(on&&navigator.wakeLock){navigator.wakeLock.request('screen').then(function(l){wl=l}).catch(function(){})}else if(!on&&wl){wl.release();wl=null}}catch(e){}}
 function setM(){
   var txt=LS?t('micOn'):t('micOff');
@@ -551,7 +557,8 @@ function setM(){
 function armWatch(){
   lastHeard=Date.now();
   clearTimeout(watchTimer);
-  var ms=isIOS?6000:12000;
+  // Genstart hvis stille for længe – holder lytning i live
+  var ms=isIOS?5000:8000;
   watchTimer=setTimeout(function(){if(LS&&!restarting)restartRec()},ms);
 }
 function restartRec(){
@@ -567,7 +574,7 @@ function restartRec(){
       setPhrases();
       rec.continuous=!isIOS;
       rec.interimResults=!isIOS;
-      rec.maxAlternatives=isIOS?1:3;
+      rec.maxAlternatives=isIOS?1:5;
       rec.onresult=onRecResult;
       rec.onerror=onRecError;
       rec.onend=onRecEnd;
@@ -575,11 +582,11 @@ function restartRec(){
       lastHeard=Date.now();
       restarting=false;
       armWatch();
-    }catch(x){restarting=false;setTimeout(function(){if(LS)restartRec()},isIOS?300:400)}
-  },isIOS?100:60);
+    }catch(x){restarting=false;setTimeout(function(){if(LS)restartRec()},250)}
+  },40);
 }
 function onRecResult(e){
-  rdelay=isIOS?120:80;armWatch();
+  rdelay=isIOS?100:50;armWatch();
   for(var i=e.resultIndex;i<e.results.length;i++){
     var r=e.results[i];
     if(r.isFinal){
@@ -587,42 +594,44 @@ function onRecResult(e){
       var ns=[];
       for(var a=0;a<r.length&&!ns.length;a++)ns=strictNums(r[a].transcript);
       handleSpoken(ns,true);
-      // iOS: efter hvert færdigt tal → hurtig ny session
       if(isIOS&&LS){try{rec.stop()}catch(e){}}
     }else if(!isIOS){
       var txt=r[0].transcript;pend=txt;clearTimeout(it);
       var nsQuick=strictNums(txt);
-      if(nsQuick.length&&nsQuick.every(function(n){return n>=10})){
-        handleSpoken(nsQuick,false);
-      }else{
-        (function(ttxt){it=setTimeout(function(){var ns=strictNums(ttxt);if(ns.length&&pend===ttxt)handleSpoken(ns,false)},80)})(txt);
+      // Marker med det samme ved komplette tal (især flere i træk)
+      if(nsQuick.length){
+        if(nsQuick.length>1 || nsQuick.every(function(n){return n>=10})){
+          handleSpoken(nsQuick,false);
+        }else{
+          (function(ttxt){it=setTimeout(function(){var ns=strictNums(ttxt);if(ns.length&&pend===ttxt)handleSpoken(ns,false)},60)})(txt);
+        }
       }
     }
   }
 }
 function onRecError(e){
   if(e.error==='not-allowed'||e.error==='service-not-allowed'){stopListen(t('micBlocked'));return}
-  // iOS: no-speech er normalt – genstart via onend
+  // no-speech / network → onend genstarter
 }
 function onRecEnd(){
   if(pend){var p=pend;pend='';handleSpoken(strictNums(p),true)}
   clearPendDigit(true);
-  // Genstart med det samme når enheden lukker sessionen
   if(LS&&!restarting)setTimeout(function(){if(LS)restartRec()},rdelay);
 }
 function stopListen(m){
-  LS=false;clearPendDigit(true);clearTimeout(watchTimer);clearInterval(keepAlive);restarting=false;
+  LS=false;clearPendDigit(true);clearTimeout(watchTimer);clearInterval(keepAlive);restarting=false;recentSpoken={};
   try{if(rec){rec.onend=null;rec.onerror=null;rec.abort()}}catch(e){}
   rec=null;wake(false);setM();if(m)toast(m);
 }
 function setPhrases(){try{if(typeof SpeechRecognitionPhrase!=='undefined'&&rec&&('phrases' in rec)){var ph=[];Object.keys(LANGS[LI].m).forEach(function(w){ph.push(new SpeechRecognitionPhrase(w,4.0))});rec.phrases=ph}}catch(e){}}
 function startListen(){if(!SR){toast(t('noSpeech'));return}
- LS=true;setM();wake(true);toast(t('listening'));restartRec();
+ LS=true;setM();wake(true);toast(t('listening'));recentSpoken={};restartRec();
  clearInterval(keepAlive);
  keepAlive=setInterval(function(){
-   if(!LS)return;
-   if(Date.now()-lastHeard>(isIOS?5000:10000))restartRec();
- },isIOS?3000:5000)}
+   if(!LS||restarting)return;
+   // Hvis intet hørt i 6 sek (Android) / 4 sek (iOS) → genstart
+   if(Date.now()-lastHeard>(isIOS?4000:6000))restartRec();
+ },isIOS?2000:3000)}
 function toggleListen(){if(LS){clearPendDigit(true);stopListen(t('listenOff'))}else startListen()}
 mb.onclick=toggleListen;
 var mb2=document.getElementById('mic2');if(mb2)mb2.onclick=toggleListen;
