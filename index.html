@@ -47,7 +47,7 @@ input.c{text-align:center;font-family:inherit}
 #clk,#dte{font-size:14px;font-weight:700;line-height:22px;color:var(--dim);font-variant-numeric:tabular-nums;pointer-events:none;white-space:nowrap;padding:0 2px}
 #clk{grid-column:1;grid-row:1}
 #dte{grid-column:2;grid-row:1;text-align:right}
-#toast{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:20px;padding:8px 16px;font-size:16px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s;z-index:30;max-width:90vw;text-align:center}
+#toast{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--mark);color:var(--markink);border:1px solid var(--mark);border-radius:20px;padding:8px 16px;font-size:18px;font-weight:700;opacity:0;pointer-events:none;transition:opacity .2s;z-index:30;max-width:90vw;text-align:center}
 #toast.on{opacity:1}
 #mic.on{background:var(--mark);color:var(--markink);border-color:var(--mark)}
 #cnt{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:22px;padding:0 7px;margin-right:8px;border-radius:5px;background:var(--mark);color:var(--markink);font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1;vertical-align:middle;white-space:nowrap;box-sizing:border-box}
@@ -456,6 +456,8 @@ function merge(it){var res=[];for(var i=0;i<it.length;i++){var a=it[i],b=it[i+1]
  return res.filter(function(n){return n>=1&&n<=90})}
 function parseNums(t){return merge(items(t,LANGS[LI]))}
 function strictNums(t){return parseNums(t)}
+// "nummer 8" / "nr 3" osv. – enkeltcifre må kun markeres når det siges eksplicit
+function hasNummerPrefix(t){return /\b(nummer|numre|nummeret|nr|tal|number|numbers)\b/i.test(t||'')}
 function markNum(n){var hits=[],s=String(n),changed=false;S.plates.forEach(function(pl,pi){var found=false;for(var idx=0;idx<pl.cells.length;idx++){if(pl.cells[idx]===s){found=true;if(!pl.marks[idx]){pl.marks[idx]=true;changed=true;buzz(pl,idx)}}}if(found)hits.push(pi+1)});return {hits:hits,changed:changed}}
 function isFullyMarked(n){
   var s=String(n),found=false;
@@ -491,11 +493,10 @@ function paintMarks(){
   updateCnt();
 }
 var recentSpoken={}; // n -> timestamp – undgå dobbeltbehandling af samme interim
-function applyNums(ns,quiet){if(S.edit||!ns.length)return;
+function applyNums(ns){if(S.edit||!ns.length)return;
  var msg=[],any=false,now=Date.now();
  ns.forEach(function(n){
    if(isFullyMarked(n))return;
-   // Samme tal inden for 1,5 sek (typisk interim-gentagelse) → spring over
    if(recentSpoken[n]&&(now-recentSpoken[n])<1500)return;
    var r=markNum(n);
    if(r.changed){any=true;recentSpoken[n]=now}
@@ -505,46 +506,59 @@ function applyNums(ns,quiet){if(S.edit||!ns.length)return;
  if(!msg.length)return;
  if(any){save();paintMarks()}
  else paintMarks();
- if(!quiet)toast('🎤 '+msg.join('   '))}
+ // Vis råbt nummer i bunden (samme farver som markerede plade-tal)
+ toast(msg.join('   '))}
 
 // Tidsbaseret kombination af enkeltcifre
 var pendDigit=null;
 function clearPendDigit(commit){
   if(!pendDigit)return;
   clearTimeout(pendDigit.timer);
-  if(commit) applyNums([pendDigit.v]);
+  // Kun commit enkeltciffer hvis det kom fra "nummer X"
+  if(commit&&pendDigit.explicit) applyNums([pendDigit.v]);
   pendDigit=null;
 }
-function handleSpoken(ns,isFinal){
+function handleSpoken(ns,isFinal,rawTxt){
   if(S.edit||!ns||!ns.length)return;
   var now=Date.now();
-  // Flere tal på én gang → marker med det samme (stille = mindre lag)
+  var explicit=hasNummerPrefix(rawTxt||'');
+  // Flere tal på én gang
   if(ns.length>1){
     if(pendDigit){clearTimeout(pendDigit.timer);pendDigit=null}
-    applyNums(ns,true);
+    applyNums(ns);
     return;
   }
-  // Enkeltcifre: kort pause (råb ~0,5–1 sek, ~1 sek mellem tal)
+  // Enkeltcifre 1–9:
+  // - kun markér direkte hvis der siges "nummer 1/2/…"
+  // - ellers kun brug til at bygge tocifret (fx 2 + 3 → 23), ikke som tallet 2 alene
   if(ns.length===1 && ns[0]>=1 && ns[0]<=9){
-    if(pendDigit && (now-pendDigit.t)<350 && pendDigit.v !== ns[0]){
+    if(pendDigit && (now-pendDigit.t)<400 && pendDigit.v !== ns[0]){
       var combined=pendDigit.v*10+ns[0];
       if(combined<=90){
         clearTimeout(pendDigit.timer);
         pendDigit=null;
-        applyNums([combined],true);
+        applyNums([combined]);
         return;
       }
     }
     if(pendDigit){clearTimeout(pendDigit.timer)}
-    pendDigit={v:ns[0],t:now,timer:setTimeout(function(){
-      if(pendDigit){applyNums([pendDigit.v],true);pendDigit=null}
-    },350)};
-    if(isFinal){clearTimeout(pendDigit.timer);pendDigit=null;applyNums(ns,true)}
+    if(explicit){
+      // "nummer 8" → markér 8
+      pendDigit={v:ns[0],t:now,explicit:true,timer:setTimeout(function(){
+        if(pendDigit){applyNums([pendDigit.v]);pendDigit=null}
+      },300)};
+      if(isFinal){clearTimeout(pendDigit.timer);pendDigit=null;applyNums(ns)}
+    }else{
+      // Bare "otte"/"2" → vent på muligt tocifret, markér IKKE som enkeltciffer
+      pendDigit={v:ns[0],t:now,explicit:false,timer:setTimeout(function(){
+        pendDigit=null; // udløb uden markering
+      },800)};
+    }
     return;
   }
-  // Tocifret: marker med det samme allerede ved interim
+  // Tocifret: marker med det samme
   if(pendDigit){clearTimeout(pendDigit.timer);pendDigit=null}
-  applyNums(ns,true);
+  applyNums(ns);
 }
 // iOS/iPadOS: korte sessioner. Android/desktop: continuous.
 var isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
@@ -591,19 +605,18 @@ function onRecResult(e){
     var r=e.results[i];
     if(r.isFinal){
       clearTimeout(it);pend='';
-      var ns=[];
-      for(var a=0;a<r.length&&!ns.length;a++)ns=strictNums(r[a].transcript);
-      handleSpoken(ns,true);
+      var bestTxt=r[0]?r[0].transcript:'',ns=[];
+      for(var a=0;a<r.length&&!ns.length;a++){ns=strictNums(r[a].transcript);if(ns.length)bestTxt=r[a].transcript}
+      handleSpoken(ns,true,bestTxt);
       if(isIOS&&LS){try{rec.stop()}catch(e){}}
     }else if(!isIOS){
       var txt=r[0].transcript;pend=txt;clearTimeout(it);
       var nsQuick=strictNums(txt);
-      // Marker med det samme ved komplette tal (især flere i træk)
       if(nsQuick.length){
-        if(nsQuick.length>1 || nsQuick.every(function(n){return n>=10})){
-          handleSpoken(nsQuick,false);
+        if(nsQuick.length>1 || nsQuick.every(function(n){return n>=10}) || hasNummerPrefix(txt)){
+          handleSpoken(nsQuick,false,txt);
         }else{
-          (function(ttxt){it=setTimeout(function(){var ns=strictNums(ttxt);if(ns.length&&pend===ttxt)handleSpoken(ns,false)},60)})(txt);
+          (function(ttxt){it=setTimeout(function(){var ns=strictNums(ttxt);if(ns.length&&pend===ttxt)handleSpoken(ns,false,ttxt)},60)})(txt);
         }
       }
     }
@@ -614,7 +627,7 @@ function onRecError(e){
   // no-speech / network → onend genstarter
 }
 function onRecEnd(){
-  if(pend){var p=pend;pend='';handleSpoken(strictNums(p),true)}
+  if(pend){var p=pend;pend='';handleSpoken(strictNums(p),true,p)}
   clearPendDigit(true);
   if(LS&&!restarting)setTimeout(function(){if(LS)restartRec()},rdelay);
 }
