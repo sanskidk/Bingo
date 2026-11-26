@@ -27,6 +27,12 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple
 h1{font-size:20px;margin:4px 0 10px}
 .bar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
 button.t{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:15px}
+/* Lodret: knapper fylder hele bredden */
+@media (orientation:portrait){
+  .bar{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .bar button.t{width:100%;text-align:center;box-sizing:border-box}
+  .bar #reset{grid-column:1/-1}
+}
 button.t:disabled{opacity:.4}
 button.t.on{background:var(--mark);color:var(--markink);border-color:var(--mark)}
 #plates{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(var(--r,3),auto);grid-auto-flow:column;gap:8px}
