@@ -200,7 +200,7 @@ function render(){
               if(p.cells[j]===v) p.marks[j]=!wasOn;
             }
           });
-          if(!wasOn){setLastCalled(v);buzz(pl,i)}
+          if(!wasOn){setLastCalled(v);buzzAllForNum(v)}
           save();
           render();
         };else el.disabled=true}
@@ -253,7 +253,34 @@ setT();
 var VIB=true,vb=document.getElementById('vib');
 try{VIB=localStorage.getItem('banko-vib')!=='0'}catch(e){}
 function vibe(p){try{if(navigator.vibrate)navigator.vibrate(p)}catch(e){}}
-function buzz(pl,i){if(!VIB)return;var r=Math.floor(i/9),rowDone=true,all=true;for(var k=0;k<27;k++){if(pl.cells[k]!==''&&!pl.marks[k]){all=false;if(Math.floor(k/9)===r)rowDone=false}}if(all)vibe([300,120,300,120,300]);else if(rowDone)vibe(250)}
+// Returnér styrke: 2=fuld plade, 1=række, 0=intet
+function buzzLevel(pl,i){
+  var r=Math.floor(i/9),rowDone=true,all=true;
+  for(var k=0;k<27;k++){
+    if(pl.cells[k]!==''&&!pl.marks[k]){all=false;if(Math.floor(k/9)===r)rowDone=false}
+  }
+  if(all)return 2;
+  if(rowDone)return 1;
+  return 0;
+}
+function buzz(pl,i){
+  if(!VIB)return;
+  var lv=buzzLevel(pl,i);
+  if(lv===2)vibe([300,120,300,120,300]);
+  else if(lv===1)vibe(250);
+}
+// Vibrér ud fra alle plader der har tallet (stærkeste mønster vinder)
+function buzzAllForNum(num){
+  if(!VIB)return;
+  var s=String(num),best=0;
+  S.plates.forEach(function(p){
+    for(var j=0;j<p.cells.length;j++){
+      if(p.cells[j]===s){var lv=buzzLevel(p,j);if(lv>best)best=lv}
+    }
+  });
+  if(best===2)vibe([300,120,300,120,300]);
+  else if(best===1)vibe(250);
+}
 function setV(){vb.textContent=t('vib');vb.classList.toggle('on',VIB)}
 vb.onclick=function(){VIB=!VIB;try{localStorage.setItem('banko-vib',VIB?'1':'0')}catch(e){}setV();if(VIB)vibe(60)};
 setV();
@@ -470,7 +497,7 @@ function parseNums(t){return merge(items(t,LANGS[LI]))}
 function strictNums(t){return parseNums(t)}
 // "nummer 8" / "nr 3" osv. – enkeltcifre må kun markeres når det siges eksplicit
 function hasNummerPrefix(t){return /\b(nummer|numre|nummeret|nr|tal|number|numbers)\b/i.test(t||'')}
-function markNum(n){var hits=[],s=String(n),changed=false;S.plates.forEach(function(pl,pi){var found=false;for(var idx=0;idx<pl.cells.length;idx++){if(pl.cells[idx]===s){found=true;if(!pl.marks[idx]){pl.marks[idx]=true;changed=true;buzz(pl,idx)}}}if(found)hits.push(pi+1)});return {hits:hits,changed:changed}}
+function markNum(n){var hits=[],s=String(n),changed=false;S.plates.forEach(function(pl,pi){var found=false;for(var idx=0;idx<pl.cells.length;idx++){if(pl.cells[idx]===s){found=true;if(!pl.marks[idx]){pl.marks[idx]=true;changed=true}}}if(found)hits.push(pi+1)});if(changed)buzzAllForNum(n);return {hits:hits,changed:changed}}
 function isFullyMarked(n){
   var s=String(n),found=false;
   for(var pi=0;pi<S.plates.length;pi++){
