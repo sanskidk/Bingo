@@ -626,10 +626,9 @@ function restartRec(){
       rec=new SR();
       rec.lang=LANGS[LI].c;
       setPhrases();
-      // iOS: single-shot + interim for hurtigere markering; Android: continuous
       rec.continuous=!isIOS;
-      rec.interimResults=true;
-      rec.maxAlternatives=5;
+      rec.interimResults=!isIOS;
+      rec.maxAlternatives=isIOS?1:5;
       rec.onresult=onRecResult;
       rec.onerror=onRecError;
       rec.onend=onRecEnd;
@@ -648,16 +647,15 @@ function onRecResult(e){
       clearTimeout(it);pend='';
       var bestTxt=r[0]?r[0].transcript:'',ns=[];
       for(var a=0;a<r.length&&!ns.length;a++){ns=strictNums(r[a].transcript);if(ns.length)bestTxt=r[a].transcript}
-      if(ns.length) handleSpoken(ns,true,bestTxt);
-      else if(bestTxt&&bestTxt.trim()) toast('🎤 "'+bestTxt.trim()+'"');
+      handleSpoken(ns,true,bestTxt);
       if(isIOS&&LS){try{rec.stop()}catch(e){}}
-    }else{
+    }else if(!isIOS){
       var txt=r[0].transcript;pend=txt;clearTimeout(it);
       var nsQuick=strictNums(txt);
       if(nsQuick.length){
         if(nsQuick.length>1 || nsQuick.every(function(n){return n>=10}) || hasNummerPrefix(txt)){
           handleSpoken(nsQuick,false,txt);
-        }else if(!isIOS){
+        }else{
           (function(ttxt){it=setTimeout(function(){var ns=strictNums(ttxt);if(ns.length&&pend===ttxt)handleSpoken(ns,false,ttxt)},60)})(txt);
         }
       }
@@ -666,8 +664,7 @@ function onRecResult(e){
 }
 function onRecError(e){
   if(e.error==='not-allowed'||e.error==='service-not-allowed'){stopListen(t('micBlocked'));return}
-  // iOS: vis fejl så man kan se, om mikrofonen reelt fejler
-  if(isIOS&&e.error&&e.error!=='no-speech'&&e.error!=='aborted') toast('Mic: '+e.error);
+  // no-speech / network → onend genstarter
 }
 function onRecEnd(){
   if(pend){var p=pend;pend='';handleSpoken(strictNums(p),true,p)}
