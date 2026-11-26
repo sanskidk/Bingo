@@ -329,6 +329,7 @@ var UI=[
   maxPlates:"Maks. 12 plader",
   listening:"🎤 Lytter – råb numrene op",
   micBlocked:"Mikrofon er blokeret – åbn siden direkte i Chrome og tillad mikrofon",
+  micBlockedIOS:"Mikrofon ikke tilladt – Indstillinger → Safari → Mikrofon → Tillad. Tryk Lyt igen.",
   noSpeech:"Din browser kan ikke lytte efter tale",
   listenOff:"Lytning slukket",
   fs:"⛶ Fuldskærm"
@@ -419,6 +420,7 @@ var UI=[
   maxPlates:"Max 12 cards",
   listening:"🎤 Listening – call the numbers",
   micBlocked:"Microphone blocked – open the page in Chrome and allow mic",
+  micBlockedIOS:"Microphone not allowed – Settings → Safari → Microphone → Allow. Tap Listen again.",
   noSpeech:"Your browser cannot listen for speech",
   listenOff:"Listening off",
   fs:"⛶ Fullscreen"
@@ -437,6 +439,7 @@ var UI=[
   maxPlates:"Maks. 12 ploča",
   listening:"🎤 Slušam – izgovorite brojeve",
   micBlocked:"Mikrofon je blokiran – otvorite stranicu u Chromeu i dozvolite mikrofon",
+  micBlockedIOS:"Mikrofon nije dozvoljen – Postavke → Safari → Mikrofon → Dozvoli. Pritisnite Slušaj ponovo.",
   noSpeech:"Vaš preglednik ne može slušati govor",
   listenOff:"Slušanje isključeno",
   fs:"⛶ Cijeli ekran"
@@ -624,7 +627,7 @@ function restartRec(){
     if(!LS){restarting=false;return}
     try{
       rec=new SR();
-      rec.lang=LANGS[LI].c;
+      rec.lang=speechLang();
       setPhrases();
       rec.continuous=!isIOS;
       rec.interimResults=!isIOS;
@@ -663,8 +666,11 @@ function onRecResult(e){
   }
 }
 function onRecError(e){
-  if(e.error==='not-allowed'||e.error==='service-not-allowed'){stopListen(t('micBlocked'));return}
-  // no-speech / network → onend genstarter
+  if(e.error==='not-allowed'||e.error==='service-not-allowed'){
+    stopListen(isIOS?t('micBlockedIOS'):t('micBlocked'));
+    return;
+  }
+  if(e.error==='language-not-supported'){toast('Sprog understøttes ikke – prøv et andet');return}
 }
 function onRecEnd(){
   if(pend){var p=pend;pend='';handleSpoken(strictNums(p),true,p)}
@@ -675,6 +681,12 @@ function stopListen(m){
   LS=false;clearPendDigit(true);clearTimeout(watchTimer);clearInterval(keepAlive);restarting=false;recentSpoken={};
   try{if(rec){rec.onend=null;rec.onerror=null;rec.abort()}}catch(e){}
   rec=null;wake(false);setM();if(m)toast(m);
+}
+function speechLang(){
+  // iOS understøtter ofte ikke bs-BA – brug kroatisk (tæt på bosnisk)
+  var c=LANGS[LI].c;
+  if(isIOS&&c==='bs-BA')return 'hr-HR';
+  return c;
 }
 function setPhrases(){try{if(typeof SpeechRecognitionPhrase!=='undefined'&&rec&&('phrases' in rec)){var ph=[];Object.keys(LANGS[LI].m).forEach(function(w){ph.push(new SpeechRecognitionPhrase(w,4.0))});rec.phrases=ph}}catch(e){}}
 function startListen(){if(!SR){toast(t('noSpeech'));return}
@@ -716,7 +728,15 @@ function refreshUI(){
   rbOff();
   render();
 }
-gb.onclick=function(){LI=(LI+1)%LANGS.length;try{localStorage.setItem('banko-lang',LI)}catch(e){}refreshUI();toast('🌐 '+LANGS[LI].n);if(rec){rec.lang=LANGS[LI].c;setPhrases();if(LS){try{rec.abort()}catch(e){}}}};
+gb.onclick=function(){
+  LI=(LI+1)%LANGS.length;
+  try{localStorage.setItem('banko-lang',LI)}catch(e){}
+  refreshUI();
+  toast('🌐 '+LANGS[LI].n);
+  // iOS: stop lytning ved sprogskift – undgår falsk "mikrofon blokeret"
+  if(LS){stopListen(null);toast('🌐 '+LANGS[LI].n+' – tryk Lyt igen')}
+  else if(rec){try{rec.lang=speechLang();setPhrases()}catch(e){}}
+};
 refreshUI();
 var ce=document.getElementById('clk'),de=document.getElementById('dte');
 function tick(){var n=new Date();function z(x){return x<10?'0'+x:''+x}ce.textContent=z(n.getHours())+':'+z(n.getMinutes())+':'+z(n.getSeconds());de.textContent=n.toLocaleDateString('da-DK',{weekday:'short',day:'numeric',month:'short',year:'numeric'})}
