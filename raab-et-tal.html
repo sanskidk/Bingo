@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Råb et tal</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      background: #111;
+      color: white;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      height: 100vh;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+    #number {
+      font-size: 28vw;
+      font-weight: 800;
+      line-height: 1;
+      text-align: center;
+      padding: 20px;
+      word-break: break-all;
+      min-height: 30vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #status {
+      font-size: 18px;
+      color: #aaa;
+      margin: 20px 0;
+      text-align: center;
+      padding: 0 20px;
+    }
+    button {
+      background: #007AFF;
+      color: white;
+      border: none;
+      padding: 18px 40px;
+      font-size: 20px;
+      border-radius: 50px;
+      font-weight: 600;
+      margin: 10px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    button:active {
+      background: #0056b3;
+    }
+    button.listening {
+      background: #FF3B30;
+    }
+    .controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div id="number">–</div>
+  <div id="status">Tryk Start og råb et tal</div>
+  
+  <div class="controls">
+    <button id="startBtn">Start</button>
+    <button id="clearBtn">Ryd</button>
+  </div>
+
+  <script>
+    const numberEl = document.getElementById('number');
+    const statusEl = document.getElementById('status');
+    const startBtn = document.getElementById('startBtn');
+    const clearBtn = document.getElementById('clearBtn');
+
+    let recognition = null;
+    let isListening = false;
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      statusEl.textContent = "Din browser understøtter desværre ikke talegenkendelse.";
+      startBtn.disabled = true;
+    } else {
+      recognition = new SpeechRecognition();
+      recognition.lang = 'da-DK';
+      recognition.continuous = true;
+      recognition.interimResults = false;
+
+      recognition.onstart = () => {
+        isListening = true;
+        startBtn.textContent = "Stop";
+        startBtn.classList.add('listening');
+        statusEl.textContent = "Lytter… råb et tal";
+      };
+
+      recognition.onend = () => {
+        if (isListening) {
+          try {
+            recognition.start();
+          } catch (e) {}
+        } else {
+          startBtn.textContent = "Start";
+          startBtn.classList.remove('listening');
+          statusEl.textContent = "Tryk Start og råb et tal";
+        }
+      };
+
+      recognition.onresult = (event) => {
+        const last = event.results.length - 1;
+        const text = event.results[last][0].transcript.trim().toLowerCase();
+        const number = extractNumber(text);
+
+        if (number !== null) {
+          numberEl.textContent = number;
+          statusEl.textContent = `Hørte: "${text}"`;
+        } else {
+          statusEl.textContent = `Hørte: "${text}" – kunne ikke finde et tal`;
+        }
+      };
+
+      recognition.onerror = (event) => {
+        console.log("Fejl:", event.error);
+        if (event.error === 'not-allowed') {
+          statusEl.textContent = "Mikrofon-tilladelse er nødvendig";
+          isListening = false;
+          startBtn.textContent = "Start";
+          startBtn.classList.remove('listening');
+        }
+      };
+    }
+
+    function extractNumber(text) {
+      text = text.replace(/[^\wæøå\s]/gi, '').trim();
+
+      const direct = text.match(/\d+/);
+      if (direct) return direct[0];
+
+      const wordToNumber = {
+        'nul': 0, 'en': 1, 'et': 1, 'to': 2, 'tre': 3, 'fire': 4,
+        'fem': 5, 'seks': 6, 'syv': 7, 'otte': 8, 'ni': 9, 'ti': 10,
+        'elleve': 11, 'tolv': 12, 'tretten': 13, 'fjorten': 14, 'femten': 15,
+        'seksten': 16, 'sytten': 17, 'atten': 18, 'nitten': 19, 'tyve': 20,
+        'enogtyve': 21, 'toogtyve': 22, 'treogtyve': 23, 'fireogtyve': 24,
+        'femogtyve': 25, 'seksogtyve': 26, 'syvogtyve': 27, 'otteogtyve': 28,
+        'niogtyve': 29, 'tredive': 30, 'fyrre': 40, 'halvtreds': 50,
+        'tres': 60, 'halvfjerds': 70, 'firs': 80, 'halvfems': 90,
+        'hundrede': 100, 'tusind': 1000
+      };
+
+      if (wordToNumber[text] !== undefined) {
+        return wordToNumber[text];
+      }
+
+      for (const [word, num] of Object.entries(wordToNumber)) {
+        if (text.includes(word)) {
+          return num;
+        }
+      }
+
+      return null;
+    }
+
+    startBtn.addEventListener('click', () => {
+      if (!recognition) return;
+
+      if (isListening) {
+        isListening = false;
+        recognition.stop();
+        startBtn.textContent = "Start";
+        startBtn.classList.remove('listening');
+        statusEl.textContent = "Stoppet";
+      } else {
+        try {
+          recognition.start();
+        } catch (e) {
+          statusEl.textContent = "Kunne ikke starte mikrofonen";
+        }
+      }
+    });
+
+    clearBtn.addEventListener('click', () => {
+      numberEl.textContent = "–";
+      statusEl.textContent = isListening ? "Lytter… råb et tal" : "Tryk Start og råb et tal";
+    });
+  </script>
+</body>
+</html>
