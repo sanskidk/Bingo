@@ -631,19 +631,43 @@ function ensureRec(){
 function restartRec(){
   if(!LS||!SR||restarting)return;
   restarting=true;
-  try{
-    var r=ensureRec();
-    r.lang=speechLang();
-    setPhrases();
-    r.start();
-    lastHeard=Date.now();
-    restarting=false;
-    armWatch();
-  }catch(x){
-    restarting=false;
-    // Allerede i gang er OK på iOS
-    if(String(x).indexOf('started')===-1) setTimeout(function(){if(LS)restartRec()},300);
+  if(isIOS){
+    // iOS: blød genstart (genbrug session)
+    try{
+      var r=ensureRec();
+      r.lang=speechLang();
+      setPhrases();
+      r.start();
+      lastHeard=Date.now();
+      restarting=false;
+      armWatch();
+    }catch(x){
+      restarting=false;
+      if(String(x).indexOf('started')===-1) setTimeout(function(){if(LS)restartRec()},300);
+    }
+    return;
   }
+  // Android: hård genstart (ny session) – som før, så lytningen ikke dør
+  try{if(rec){try{rec.onend=null;rec.onerror=null;rec.onresult=null;rec.abort()}catch(e){try{rec.stop()}catch(e2){}}}}catch(e){}
+  rec=null;
+  setTimeout(function(){
+    if(!LS){restarting=false;return}
+    try{
+      rec=new SR();
+      rec.continuous=true;
+      rec.interimResults=true;
+      rec.maxAlternatives=5;
+      rec.lang=speechLang();
+      setPhrases();
+      rec.onresult=onRecResult;
+      rec.onerror=onRecError;
+      rec.onend=onRecEnd;
+      rec.start();
+      lastHeard=Date.now();
+      restarting=false;
+      armWatch();
+    }catch(x){restarting=false;setTimeout(function(){if(LS)restartRec()},300)}
+  },50);
 }
 function onRecResult(e){
   armWatch();
@@ -679,17 +703,20 @@ function onRecError(e){
 function onRecEnd(){
   if(pend){var p=pend;pend='';handleSpoken(strictNums(p),true,p)}
   clearPendDigit(true);
-  // Som den lille app: bare start igen hvis vi stadig skal lytte
-  if(LS){
+  if(!LS||restarting)return;
+  if(isIOS){
+    // iOS: blød start igen
     try{ensureRec().lang=speechLang();rec.start()}catch(e){
       setTimeout(function(){if(LS){try{rec.start()}catch(e2){restartRec()}}},200);
     }
+  }else{
+    // Android: hård genstart efter kort pause
+    setTimeout(function(){if(LS)restartRec()},50);
   }
 }
 function stopListen(m){
   LS=false;clearPendDigit(true);clearTimeout(watchTimer);clearInterval(keepAlive);restarting=false;recentSpoken={};
-  try{if(rec){rec.onend=null;rec.onerror=null;rec.stop()}}catch(e){}
-  // Behold rec-objektet på iOS (genbrug). Android: null så vi får frisk session.
+  try{if(rec){rec.onend=null;rec.onerror=null;if(isIOS)rec.stop();else rec.abort()}}catch(e){}
   if(!isIOS)rec=null;
   wake(false);setM();if(m)toast(m);
 }
