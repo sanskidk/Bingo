@@ -621,8 +621,8 @@ function ensureRec(){
   if(rec)return rec;
   rec=new SR();
   rec.continuous=true;
-  rec.interimResults=!isIOS; // iOS: kun final (som den lille app)
-  rec.maxAlternatives=isIOS?1:5;
+  rec.interimResults=true; // hurtigere markering også på iPhone
+  rec.maxAlternatives=isIOS?3:5;
   rec.onresult=onRecResult;
   rec.onerror=onRecError;
   rec.onend=onRecEnd;
@@ -654,13 +654,14 @@ function onRecResult(e){
       var bestTxt=r[0]?r[0].transcript:'',ns=[];
       for(var a=0;a<r.length&&!ns.length;a++){ns=strictNums(r[a].transcript);if(ns.length)bestTxt=r[a].transcript}
       handleSpoken(ns,true,bestTxt);
-    }else if(!isIOS){
+    }else{
       var txt=r[0].transcript;pend=txt;clearTimeout(it);
       var nsQuick=strictNums(txt);
       if(nsQuick.length){
+        // Marker med det samme ved tocifrede / flere tal (også på iPhone)
         if(nsQuick.length>1 || nsQuick.every(function(n){return n>=10}) || hasNummerPrefix(txt)){
           handleSpoken(nsQuick,false,txt);
-        }else{
+        }else if(!isIOS){
           (function(ttxt){it=setTimeout(function(){var ns=strictNums(ttxt);if(ns.length&&pend===ttxt)handleSpoken(ns,false,ttxt)},60)})(txt);
         }
       }
