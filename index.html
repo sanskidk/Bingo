@@ -614,60 +614,53 @@ function setM(){
 function armWatch(){
   lastHeard=Date.now();
   clearTimeout(watchTimer);
-  if(isIOS)return; // iOS: stol på onend-genstart som den lille app
-  watchTimer=setTimeout(function(){if(LS&&!restarting)restartRec()},8000);
+  // Kun nød-genstart ved lang stilhed (undgå at afbryde midt i råb)
+  watchTimer=setTimeout(function(){if(LS&&!restarting)restartRec(true)},isIOS?12000:10000);
 }
 function ensureRec(){
   if(rec)return rec;
   rec=new SR();
   rec.continuous=true;
-  rec.interimResults=true; // hurtigere markering også på iPhone
-  rec.maxAlternatives=isIOS?3:5;
+  rec.interimResults=true;
+  rec.maxAlternatives=5;
   rec.onresult=onRecResult;
   rec.onerror=onRecError;
   rec.onend=onRecEnd;
   return rec;
 }
-function restartRec(){
+// hard=true: ny session (Android nød). Ellers blød genstart som iPhone.
+function restartRec(hard){
   if(!LS||!SR||restarting)return;
   restarting=true;
-  if(isIOS){
-    // iOS: blød genstart (genbrug session)
-    try{
-      var r=ensureRec();
-      r.lang=speechLang();
-      setPhrases();
-      r.start();
-      lastHeard=Date.now();
-      restarting=false;
-      armWatch();
-    }catch(x){
-      restarting=false;
-      if(String(x).indexOf('started')===-1) setTimeout(function(){if(LS)restartRec()},300);
-    }
+  if(!isIOS&&hard){
+    try{if(rec){try{rec.onend=null;rec.onerror=null;rec.onresult=null;rec.abort()}catch(e){try{rec.stop()}catch(e2){}}}}catch(e){}
+    rec=null;
+    setTimeout(function(){
+      if(!LS){restarting=false;return}
+      try{
+        var r=ensureRec();
+        r.lang=speechLang();
+        setPhrases();
+        r.start();
+        lastHeard=Date.now();
+        restarting=false;
+        armWatch();
+      }catch(x){restarting=false;setTimeout(function(){if(LS)restartRec(true)},300)}
+    },40);
     return;
   }
-  // Android: hård genstart (ny session) – som før, så lytningen ikke dør
-  try{if(rec){try{rec.onend=null;rec.onerror=null;rec.onresult=null;rec.abort()}catch(e){try{rec.stop()}catch(e2){}}}}catch(e){}
-  rec=null;
-  setTimeout(function(){
-    if(!LS){restarting=false;return}
-    try{
-      rec=new SR();
-      rec.continuous=true;
-      rec.interimResults=true;
-      rec.maxAlternatives=5;
-      rec.lang=speechLang();
-      setPhrases();
-      rec.onresult=onRecResult;
-      rec.onerror=onRecError;
-      rec.onend=onRecEnd;
-      rec.start();
-      lastHeard=Date.now();
-      restarting=false;
-      armWatch();
-    }catch(x){restarting=false;setTimeout(function(){if(LS)restartRec()},300)}
-  },50);
+  try{
+    var r=ensureRec();
+    r.lang=speechLang();
+    setPhrases();
+    r.start();
+    lastHeard=Date.now();
+    restarting=false;
+    armWatch();
+  }catch(x){
+    restarting=false;
+    if(String(x).indexOf('started')===-1) setTimeout(function(){if(LS)restartRec(!isIOS)},250);
+  }
 }
 function onRecResult(e){
   armWatch();
@@ -704,20 +697,15 @@ function onRecEnd(){
   if(pend){var p=pend;pend='';handleSpoken(strictNums(p),true,p)}
   clearPendDigit(true);
   if(!LS||restarting)return;
-  if(isIOS){
-    // iOS: blød start igen
-    try{ensureRec().lang=speechLang();rec.start()}catch(e){
-      setTimeout(function(){if(LS){try{rec.start()}catch(e2){restartRec()}}},200);
-    }
-  }else{
-    // Android: hård genstart efter kort pause
-    setTimeout(function(){if(LS)restartRec()},50);
+  // Både iPhone og Android: blød start (undgår at missere tal midt i råb)
+  try{ensureRec().lang=speechLang();rec.start()}catch(e){
+    setTimeout(function(){if(LS)restartRec(!isIOS)},150);
   }
 }
 function stopListen(m){
   LS=false;clearPendDigit(true);clearTimeout(watchTimer);clearInterval(keepAlive);restarting=false;recentSpoken={};
-  try{if(rec){rec.onend=null;rec.onerror=null;if(isIOS)rec.stop();else rec.abort()}}catch(e){}
-  if(!isIOS)rec=null;
+  try{if(rec){rec.onend=null;rec.onerror=null;rec.stop()}}catch(e){}
+  rec=null;
   wake(false);setM();if(m)toast(m);
 }
 function speechLang(){
@@ -738,12 +726,13 @@ function startListen(){if(!SR){toast(t('noSpeech'));return}
      lastHeard=Date.now();
    }catch(e){toast('Kunne ikke starte mikrofonen')}
  }else{
-   restartRec();
+   restartRec(false);
    clearInterval(keepAlive);
    keepAlive=setInterval(function(){
      if(!LS||restarting)return;
-     if(Date.now()-lastHeard>6000)restartRec();
-   },3000);
+     // Kun hård genstart hvis intet hørt i 10 sek
+     if(Date.now()-lastHeard>10000)restartRec(true);
+   },4000);
  }}
 function toggleListen(){if(LS){clearPendDigit(true);stopListen(t('listenOff'))}else startListen()}
 mb.onclick=toggleListen;
