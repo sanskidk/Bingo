@@ -662,24 +662,47 @@ function restartRec(hard){
     if(String(x).indexOf('started')===-1) setTimeout(function(){if(LS)restartRec(!isIOS)},250);
   }
 }
+// Husk tekst der ikke gav tal endnu – prøv igen ved næste råb (som iPhone ofte gør)
+var heldTxt='',heldAt=0;
+function consumeSpeech(txt,isFinal){
+  if(!txt)return;
+  var combined=txt;
+  // Hvis forrige stump ikke blev til tal, prøv sammen med det nye
+  if(heldTxt&&(Date.now()-heldAt)<4000){
+    combined=heldTxt+' '+txt;
+  }
+  var ns=strictNums(combined);
+  if(!ns.length)ns=strictNums(txt);
+  if(ns.length){
+    handleSpoken(ns,isFinal,combined);
+    heldTxt='';
+    heldAt=0;
+  }else if(isFinal){
+    // Gem til næste resultat i stedet for at glemme
+    heldTxt=(txt||'').trim();
+    heldAt=Date.now();
+  }
+}
 function onRecResult(e){
   armWatch();
   for(var i=e.resultIndex;i<e.results.length;i++){
     var r=e.results[i];
     if(r.isFinal){
       clearTimeout(it);pend='';
-      var bestTxt=r[0]?r[0].transcript:'',ns=[];
-      for(var a=0;a<r.length&&!ns.length;a++){ns=strictNums(r[a].transcript);if(ns.length)bestTxt=r[a].transcript}
-      handleSpoken(ns,true,bestTxt);
+      var bestTxt=r[0]?r[0].transcript:'';
+      for(var a=0;a<r.length;a++){
+        var cand=r[a].transcript;
+        if(strictNums(cand).length){bestTxt=cand;break}
+      }
+      consumeSpeech(bestTxt,true);
     }else{
       var txt=r[0].transcript;pend=txt;clearTimeout(it);
       var nsQuick=strictNums(txt);
       if(nsQuick.length){
-        // Marker med det samme ved tocifrede / flere tal (også på iPhone)
         if(nsQuick.length>1 || nsQuick.every(function(n){return n>=10}) || hasNummerPrefix(txt)){
-          handleSpoken(nsQuick,false,txt);
+          consumeSpeech(txt,false);
         }else if(!isIOS){
-          (function(ttxt){it=setTimeout(function(){var ns=strictNums(ttxt);if(ns.length&&pend===ttxt)handleSpoken(ns,false,ttxt)},60)})(txt);
+          (function(ttxt){it=setTimeout(function(){if(pend===ttxt)consumeSpeech(ttxt,false)},60)})(txt);
         }
       }
     }
@@ -691,19 +714,17 @@ function onRecError(e){
     return;
   }
   if(e.error==='language-not-supported'){toast('Sprog understøttes ikke – prøv et andet');return}
-  // no-speech / aborted: onend genstarter
 }
 function onRecEnd(){
-  if(pend){var p=pend;pend='';handleSpoken(strictNums(p),true,p)}
+  if(pend){var p=pend;pend='';consumeSpeech(p,true)}
   clearPendDigit(true);
   if(!LS||restarting)return;
-  // Både iPhone og Android: blød start (undgår at missere tal midt i råb)
   try{ensureRec().lang=speechLang();rec.start()}catch(e){
     setTimeout(function(){if(LS)restartRec(!isIOS)},150);
   }
 }
 function stopListen(m){
-  LS=false;clearPendDigit(true);clearTimeout(watchTimer);clearInterval(keepAlive);restarting=false;recentSpoken={};
+  LS=false;clearPendDigit(true);clearTimeout(watchTimer);clearInterval(keepAlive);restarting=false;recentSpoken={};heldTxt='';heldAt=0;
   try{if(rec){rec.onend=null;rec.onerror=null;rec.stop()}}catch(e){}
   rec=null;
   wake(false);setM();if(m)toast(m);
@@ -715,7 +736,7 @@ function speechLang(){
 }
 function setPhrases(){try{if(typeof SpeechRecognitionPhrase!=='undefined'&&rec&&('phrases' in rec)){var ph=[];Object.keys(LANGS[LI].m).forEach(function(w){ph.push(new SpeechRecognitionPhrase(w,4.0))});rec.phrases=ph}}catch(e){}}
 function startListen(){if(!SR){toast(t('noSpeech'));return}
- LS=true;setM();wake(true);toast(t('listening'));recentSpoken={};
+ LS=true;setM();wake(true);toast(t('listening'));recentSpoken={};heldTxt='';heldAt=0;
  if(isIOS){
    // Enkel start som "Råb et tal"
    try{
