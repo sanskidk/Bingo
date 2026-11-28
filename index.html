@@ -548,6 +548,7 @@ function applyNums(ns){if(S.edit||!ns.length)return;
  if(!msg.length)return;
  if(any){save();paintMarks()}
  else paintMarks();
+ noteMarked(); // tal blev råbt/behandlet → nulstil 4-sek hard-genstart
  // Vis råbt nummer i bunden (samme farver som markerede plade-tal)
  toast(msg.join('   '))}
 
@@ -603,9 +604,9 @@ function handleSpoken(ns,isFinal,rawTxt){
   if(pendDigit){clearTimeout(pendDigit.timer);pendDigit=null}
   applyNums(ns);
 }
-// iOS/iPadOS: korte sessioner. Android/desktop: continuous.
+// iOS: blød model. Android: blød ved onend, hård kun efter 4 sek uden markerede/råbte tal.
 var isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
-var pend='',it,rdelay=isIOS?100:50,watchTimer=null,keepAlive=null,lastHeard=0,restarting=false;
+var pend='',it,rdelay=isIOS?100:50,watchTimer=null,keepAlive=null,lastHeard=0,lastMarked=0,restarting=false;
 function wake(on){try{if(on&&navigator.wakeLock){navigator.wakeLock.request('screen').then(function(l){wl=l}).catch(function(){})}else if(!on&&wl){wl.release();wl=null}}catch(e){}}
 function setM(){
   var txt=LS?t('micOn'):t('micOff');
@@ -614,36 +615,64 @@ function setM(){
 function armWatch(){
   lastHeard=Date.now();
   clearTimeout(watchTimer);
-  // Genstart hvis stille for længe – holder lytning i live
-  var ms=isIOS?5000:8000;
-  watchTimer=setTimeout(function(){if(LS&&!restarting)restartRec()},ms);
+  if(isIOS)return;
+  // Android: hård genstart KUN hvis intet tal er råbt/markeret i 4 sek
+  watchTimer=setTimeout(function(){
+    if(!LS||restarting)return;
+    if(Date.now()-lastMarked>=4000) restartRec(true);
+  },4000);
 }
-function restartRec(){
+function noteMarked(){
+  lastMarked=Date.now();
+  armWatch(); // forny 4-sek-timeren
+}
+function ensureRec(){
+  if(rec)return rec;
+  rec=new SR();
+  rec.continuous=true;
+  rec.interimResults=true;
+  rec.maxAlternatives=isIOS?3:5;
+  rec.onresult=onRecResult;
+  rec.onerror=onRecError;
+  rec.onend=onRecEnd;
+  return rec;
+}
+// hard=true: ny session (Android). Ellers blød genstart.
+function restartRec(hard){
   if(!LS||!SR||restarting)return;
   restarting=true;
-  try{if(rec){try{rec.onend=null;rec.onerror=null;rec.onresult=null;rec.abort()}catch(e){try{rec.stop()}catch(e2){}}}}catch(e){}
-  rec=null;
-  setTimeout(function(){
-    if(!LS){restarting=false;return}
-    try{
-      rec=new SR();
-      rec.lang=speechLang();
-      setPhrases();
-      rec.continuous=!isIOS;
-      rec.interimResults=!isIOS;
-      rec.maxAlternatives=isIOS?1:5;
-      rec.onresult=onRecResult;
-      rec.onerror=onRecError;
-      rec.onend=onRecEnd;
-      rec.start();
-      lastHeard=Date.now();
-      restarting=false;
-      armWatch();
-    }catch(x){restarting=false;setTimeout(function(){if(LS)restartRec()},250)}
-  },40);
+  if(!isIOS&&hard){
+    try{if(rec){try{rec.onend=null;rec.onerror=null;rec.onresult=null;rec.abort()}catch(e){try{rec.stop()}catch(e2){}}}}catch(e){}
+    rec=null;
+    setTimeout(function(){
+      if(!LS){restarting=false;return}
+      try{
+        var r=ensureRec();
+        r.lang=speechLang();
+        setPhrases();
+        r.start();
+        lastHeard=Date.now();
+        restarting=false;
+        armWatch();
+      }catch(x){restarting=false;setTimeout(function(){if(LS)restartRec(true)},300)}
+    },50);
+    return;
+  }
+  try{
+    var r=ensureRec();
+    r.lang=speechLang();
+    setPhrases();
+    r.start();
+    lastHeard=Date.now();
+    restarting=false;
+    armWatch();
+  }catch(x){
+    restarting=false;
+    if(String(x).indexOf('started')===-1) setTimeout(function(){if(LS)restartRec(!isIOS)},300);
+  }
 }
 function onRecResult(e){
-  rdelay=isIOS?100:50;armWatch();
+  armWatch();
   for(var i=e.resultIndex;i<e.results.length;i++){
     var r=e.results[i];
     if(r.isFinal){
@@ -651,14 +680,14 @@ function onRecResult(e){
       var bestTxt=r[0]?r[0].transcript:'',ns=[];
       for(var a=0;a<r.length&&!ns.length;a++){ns=strictNums(r[a].transcript);if(ns.length)bestTxt=r[a].transcript}
       handleSpoken(ns,true,bestTxt);
-      if(isIOS&&LS){try{rec.stop()}catch(e){}}
-    }else if(!isIOS){
+    }else{
       var txt=r[0].transcript;pend=txt;clearTimeout(it);
       var nsQuick=strictNums(txt);
       if(nsQuick.length){
+        // Marker med det samme ved tocifrede / flere tal (også på iPhone)
         if(nsQuick.length>1 || nsQuick.every(function(n){return n>=10}) || hasNummerPrefix(txt)){
           handleSpoken(nsQuick,false,txt);
-        }else{
+        }else if(!isIOS){
           (function(ttxt){it=setTimeout(function(){var ns=strictNums(ttxt);if(ns.length&&pend===ttxt)handleSpoken(ns,false,ttxt)},60)})(txt);
         }
       }
@@ -671,32 +700,49 @@ function onRecError(e){
     return;
   }
   if(e.error==='language-not-supported'){toast('Sprog understøttes ikke – prøv et andet');return}
+  // no-speech / aborted: onend genstarter
 }
 function onRecEnd(){
   if(pend){var p=pend;pend='';handleSpoken(strictNums(p),true,p)}
   clearPendDigit(true);
-  if(LS&&!restarting)setTimeout(function(){if(LS)restartRec()},rdelay);
+  if(!LS||restarting)return;
+  // Altid blød genstart ved onend – hård kun via 4-sek-timer uden markerede tal
+  try{ensureRec().lang=speechLang();rec.start()}catch(e){
+    setTimeout(function(){if(LS)restartRec(false)},150);
+  }
 }
 function stopListen(m){
   LS=false;clearPendDigit(true);clearTimeout(watchTimer);clearInterval(keepAlive);restarting=false;recentSpoken={};
-  try{if(rec){rec.onend=null;rec.onerror=null;rec.abort()}}catch(e){}
-  rec=null;wake(false);setM();if(m)toast(m);
+  try{if(rec){rec.onend=null;rec.onerror=null;rec.stop()}}catch(e){}
+  rec=null;
+  wake(false);setM();if(m)toast(m);
 }
 function speechLang(){
-  // iOS understøtter ofte ikke bs-BA – brug kroatisk (tæt på bosnisk)
   var c=LANGS[LI].c;
   if(isIOS&&c==='bs-BA')return 'hr-HR';
   return c;
 }
 function setPhrases(){try{if(typeof SpeechRecognitionPhrase!=='undefined'&&rec&&('phrases' in rec)){var ph=[];Object.keys(LANGS[LI].m).forEach(function(w){ph.push(new SpeechRecognitionPhrase(w,4.0))});rec.phrases=ph}}catch(e){}}
 function startListen(){if(!SR){toast(t('noSpeech'));return}
- LS=true;setM();wake(true);toast(t('listening'));recentSpoken={};restartRec();
- clearInterval(keepAlive);
- keepAlive=setInterval(function(){
-   if(!LS||restarting)return;
-   // Hvis intet hørt i 6 sek (Android) / 4 sek (iOS) → genstart
-   if(Date.now()-lastHeard>(isIOS?4000:6000))restartRec();
- },isIOS?2000:3000)}
+ LS=true;setM();wake(true);toast(t('listening'));recentSpoken={};
+ lastMarked=Date.now();
+ if(isIOS){
+   try{
+     var r=ensureRec();
+     r.lang=speechLang();
+     setPhrases();
+     r.start();
+     lastHeard=Date.now();
+   }catch(e){toast('Kunne ikke starte mikrofonen')}
+ }else{
+   restartRec(false);
+   clearInterval(keepAlive);
+   keepAlive=setInterval(function(){
+     if(!LS||restarting)return;
+     // Hård genstart kun hvis intet tal markeret/råbt i 4 sek
+     if(Date.now()-lastMarked>=4000)restartRec(true);
+   },2000);
+ }}
 function toggleListen(){if(LS){clearPendDigit(true);stopListen(t('listenOff'))}else startListen()}
 mb.onclick=toggleListen;
 var mb2=document.getElementById('mic2');if(mb2)mb2.onclick=toggleListen;
