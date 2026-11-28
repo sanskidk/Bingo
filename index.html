@@ -604,9 +604,10 @@ function handleSpoken(ns,isFinal,rawTxt){
   if(pendDigit){clearTimeout(pendDigit.timer);pendDigit=null}
   applyNums(ns);
 }
-// iOS: blød model. Android: blød ved onend, hård kun efter 4 sek uden markerede/råbte tal.
+// iOS: blød model. Android: max én genstart pr. ~3,5 sek – ellers misses 1. tal.
 var isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
-var pend='',it,rdelay=isIOS?100:50,watchTimer=null,keepAlive=null,lastHeard=0,lastMarked=0,restarting=false;
+var pend='',it,rdelay=isIOS?100:50,watchTimer=null,keepAlive=null,lastHeard=0,lastMarked=0,lastRestart=0,restarting=false;
+var MIN_RESTART_GAP=3500;
 function wake(on){try{if(on&&navigator.wakeLock){navigator.wakeLock.request('screen').then(function(l){wl=l}).catch(function(){})}else if(!on&&wl){wl.release();wl=null}}catch(e){}}
 function setM(){
   var txt=LS?t('micOn'):t('micOff');
@@ -616,15 +617,15 @@ function armWatch(){
   lastHeard=Date.now();
   clearTimeout(watchTimer);
   if(isIOS)return;
-  // Android: hård genstart KUN hvis intet tal er råbt/markeret i 4 sek
+  // Hård genstart kun efter 8 sek. uden råbte/markerede tal
   watchTimer=setTimeout(function(){
     if(!LS||restarting)return;
-    if(Date.now()-lastMarked>=4000) restartRec(true);
-  },4000);
+    if(Date.now()-lastMarked>=8000) restartRec(true);
+  },8000);
 }
 function noteMarked(){
   lastMarked=Date.now();
-  armWatch(); // forny 4-sek-timeren
+  armWatch();
 }
 function ensureRec(){
   if(rec)return rec;
@@ -637,10 +638,11 @@ function ensureRec(){
   rec.onend=onRecEnd;
   return rec;
 }
-// hard=true: ny session (Android). Ellers blød genstart.
 function restartRec(hard){
   if(!LS||!SR||restarting)return;
+  if(!isIOS&&(Date.now()-lastRestart)<MIN_RESTART_GAP)return;
   restarting=true;
+  lastRestart=Date.now();
   if(!isIOS&&hard){
     try{if(rec){try{rec.onend=null;rec.onerror=null;rec.onresult=null;rec.abort()}catch(e){try{rec.stop()}catch(e2){}}}}catch(e){}
     rec=null;
@@ -654,8 +656,8 @@ function restartRec(hard){
         lastHeard=Date.now();
         restarting=false;
         armWatch();
-      }catch(x){restarting=false;setTimeout(function(){if(LS)restartRec(true)},300)}
-    },50);
+      }catch(x){restarting=false;setTimeout(function(){if(LS)restartRec(true)},400)}
+    },80);
     return;
   }
   try{
@@ -668,7 +670,7 @@ function restartRec(hard){
     armWatch();
   }catch(x){
     restarting=false;
-    if(String(x).indexOf('started')===-1) setTimeout(function(){if(LS)restartRec(!isIOS)},300);
+    if(String(x).indexOf('started')===-1) setTimeout(function(){if(LS)restartRec(false)},300);
   }
 }
 function onRecResult(e){
@@ -706,10 +708,15 @@ function onRecEnd(){
   if(pend){var p=pend;pend='';handleSpoken(strictNums(p),true,p)}
   clearPendDigit(true);
   if(!LS||restarting)return;
-  // Altid blød genstart ved onend – hård kun via 4-sek-timer uden markerede tal
-  try{ensureRec().lang=speechLang();rec.start()}catch(e){
-    setTimeout(function(){if(LS)restartRec(false)},150);
-  }
+  // Android: vent hvis vi lige har genstartet (så 1. tal kan fanges)
+  var gap=!isIOS?Math.max(0,MIN_RESTART_GAP-(Date.now()-lastRestart)):0;
+  setTimeout(function(){
+    if(!LS||restarting)return;
+    if(!isIOS) lastRestart=Date.now();
+    try{ensureRec().lang=speechLang();rec.start()}catch(e){
+      setTimeout(function(){if(LS)restartRec(false)},200);
+    }
+  },gap);
 }
 function stopListen(m){
   LS=false;clearPendDigit(true);clearTimeout(watchTimer);clearInterval(keepAlive);restarting=false;recentSpoken={};
@@ -739,9 +746,8 @@ function startListen(){if(!SR){toast(t('noSpeech'));return}
    clearInterval(keepAlive);
    keepAlive=setInterval(function(){
      if(!LS||restarting)return;
-     // Hård genstart kun hvis intet tal markeret/råbt i 4 sek
-     if(Date.now()-lastMarked>=4000)restartRec(true);
-   },2000);
+     if(Date.now()-lastMarked>=8000)restartRec(true);
+   },3000);
  }}
 function toggleListen(){if(LS){clearPendDigit(true);stopListen(t('listenOff'))}else startListen()}
 mb.onclick=toggleListen;
